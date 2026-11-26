@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Référentiel Psychomoteur — Base de Connaissances Clinique & Théorique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            clinical: {
+              bg: '#F8FAFC',
+              card: '#FFFFFF',
+              border: '#E2E8F0',
+              teal: '#0F766E',
+              tealDark: '#115E59',
+              tealLight: '#F0FDFA',
+              tealSoft: '#CCFBF1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #F8FAFC;
+      color: #1E293B;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+    @keyframes pulseHighlight {
+      0% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45); border-color: #0F766E; }
+      70% { box-shadow: 0 0 0 10px rgba(15, 118, 110, 0); border-color: #0F766E; }
+      100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0); }
+    }
+    .highlight-card {
+      animation: pulseHighlight 1.8s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-teal-100 selection:text-teal-900">
+
+  <!-- Toast / Status Notification -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Confirmation Modal (Replaces window.confirm) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 transform transition-all">
+      <div class="flex items-start gap-3.5">
+        <div id="confirm-icon-wrap" class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 id="confirm-title" class="text-base font-semibold text-slate-900">Confirmer l'action</h3>
+          <p id="confirm-message" class="mt-1.5 text-sm text-slate-600 leading-relaxed">Êtes-vous sûr de vouloir continuer ?</p>
+        </div>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-2.5">
+        <button id="confirm-cancel-btn" type="button" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+          Annuler
+        </button>
+        <button id="confirm-ok-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors">
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter un Nouveau Terme (depuis l'onglet Termes) -->
+  <div id="new-term-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+          <span class="w-2 h-6 rounded-full bg-clinical-teal inline-block"></span>
+          Nouveau concept / terme psychomoteur
+        </h3>
+        <button type="button" onclick="closeNewTermModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="new-term-form" class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Auteur associé *</label>
+          <select id="new-term-author" required class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Nom du terme *</label>
+          <input id="new-term-title" type="text" required placeholder="Ex : Accordage tonico-émotionnel" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Définition clinique / théorique *</label>
+          <textarea id="new-term-def" rows="4" required placeholder="Rédigez une définition précise..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20"></textarea>
+        </div>
+        <div class="pt-2 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeNewTermModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Annuler</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl shadow-xs transition-colors">Ajouter le terme</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter un Nouvel Auteur (depuis l'onglet Auteurs) -->
+  <div id="new-author-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <h3 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+          <span class="w-2 h-6 rounded-full bg-clinical-teal inline-block"></span>
+          Ajouter un auteur / théoricien
+        </h3>
+        <button type="button" onclick="closeNewAuthorModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="new-author-form" class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Nom complet de l'auteur *</label>
+          <input id="new-author-name" type="text" required placeholder="Ex : Jean Bergès" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Profession / Titre clinique *</label>
+          <input id="new-author-prof" type="text" required placeholder="Ex : Neuropsychiatre et psychanalyste" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Référence bibliographique initiale (optionnel)</label>
+          <input id="new-author-ref" type="text" placeholder="Ex : Bergès, J., & Lézine, I. (1963). Test d'imitation de gestes. Masson." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+        </div>
+        <div class="pt-2 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeNewAuthorModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Annuler</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl shadow-xs transition-colors">Créer la fiche auteur</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header & Main Navigation -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Top bar: Brand + Counters + Data Tools -->
+      <div class="py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-linear-to-br from-clinical-teal to-clinical-tealDark text-white flex items-center justify-center shadow-xs shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900">Référentiel Psychomoteur</h1>
+              <span id="save-status-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/70 transition-opacity">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span id="save-status-text">Synchronisé</span>
+              </span>
+            </div>
+            <p class="text-xs text-slate-500">Base de connaissances clinique, théorique et bibliographique</p>
+          </div>
+        </div>
+
+        <!-- Counters & Data Management Toolbar -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <!-- Live Counters -->
+          <div class="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs">
+            <span class="font-semibold text-clinical-teal" id="counter-terms">230</span>
+            <span class="text-slate-600">termes</span>
+            <span class="text-slate-300 mx-1">•</span>
+            <span class="font-semibold text-clinical-teal" id="counter-authors">55</span>
+            <span class="text-slate-600">auteurs</span>
+          </div>
+
+          <!-- Discrete Export / Import / Reset buttons -->
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="exportJSON()" title="Exporter la base en JSON" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-clinical-teal bg-white hover:bg-teal-50/60 border border-slate-200 rounded-xl transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+              <span class="hidden sm:inline">Exporter JSON</span>
+            </button>
+
+            <label title="Importer un fichier JSON" class="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-clinical-teal bg-white hover:bg-teal-50/60 border border-slate-200 rounded-xl transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+              <span class="hidden sm:inline">Importer</span>
+              <input type="file" id="import-json-input" accept=".json,application/json" class="hidden" onchange="importJSON(event)">
+            </label>
+
+            <button type="button" onclick="confirmResetData()" title="Réinitialiser avec les données Excel d'origine" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 bg-white hover:bg-rose-50/60 border border-slate-200 rounded-xl transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+              <span class="hidden md:inline">Réinitialiser</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Main Tabs Navigation -->
+      <nav class="flex items-center gap-2 -mb-px" aria-label="Onglets principaux">
+        <button id="tab-btn-terms" type="button" onclick="switchTab('terms')" class="group relative flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-clinical-teal text-clinical-teal transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+          </svg>
+          <span>Termes</span>
+          <span id="tab-badge-terms" class="px-2 py-0.5 text-xs rounded-full bg-teal-100 text-clinical-tealDark font-semibold">230</span>
+        </button>
+
+        <button id="tab-btn-authors" type="button" onclick="switchTab('authors')" class="group relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+          <span>Auteurs</span>
+          <span id="tab-badge-authors" class="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold">55</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ==================== TAB 1: TERMES ==================== -->
+    <section id="view-terms" class="space-y-5">
+      <!-- Search, Author Filter, Sort & Add Term Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3.5">
+        <div class="flex flex-col lg:flex-row gap-3">
+          <!-- Instant Search -->
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input id="terms-search-input" type="text" placeholder="Rechercher un terme, une notion clinique, une définition ou un auteur..." oninput="handleTermsFilterChange()" class="w-full pl-10 pr-9 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all">
+            <button id="terms-search-clear" type="button" onclick="clearTermsSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Filter by Author -->
+          <div class="sm:w-64">
+            <select id="terms-author-filter" onchange="handleTermsFilterChange()" class="w-full py-2.5 px-3.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+              <option value="ALL">Tous les auteurs (55)</option>
+            </select>
+          </div>
+
+          <!-- Add New Term CTA -->
+          <button type="button" onclick="openNewTermModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl shadow-xs transition-colors shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <span>Nouveau terme</span>
+          </button>
+        </div>
+
+        <!-- Alphabetical Quick Filter Bar -->
+        <div class="flex items-center gap-1 overflow-x-auto pb-1 pt-1 border-t border-slate-100" id="terms-alpha-bar">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Results Count & Active Filters Indicator -->
+      <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+        <div id="terms-results-summary">Affichage de <strong class="text-slate-800">230</strong> termes</div>
+        <button id="terms-reset-filters-btn" type="button" onclick="resetTermsFilters()" class="hidden text-clinical-teal hover:underline font-medium">
+          Réinitialiser les filtres
+        </button>
+      </div>
+
+      <!-- Terms List Container -->
+      <div id="terms-list-container" class="grid grid-cols-1 gap-3.5">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: AUTEURS ==================== -->
+    <section id="view-authors" class="hidden space-y-5">
+      <!-- Authors Search & Actions Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input id="authors-search-input" type="text" placeholder="Filtrer par nom d'auteur, profession, terme associé ou référence..." oninput="renderAuthorsView()" class="w-full pl-10 pr-9 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all">
+          <button id="authors-search-clear" type="button" onclick="clearAuthorsSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" onclick="toggleAllAuthorsAccordion(true)" class="px-3 py-2.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70 rounded-xl transition-colors">
+            Tout déplier
+          </button>
+          <button type="button" onclick="toggleAllAuthorsAccordion(false)" class="px-3 py-2.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70 rounded-xl transition-colors">
+            Tout replier
+          </button>
+          <button type="button" onclick="openNewAuthorModal()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl shadow-xs transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <span>Nouvel auteur</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Authors Summary -->
+      <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+        <div id="authors-results-summary">Affichage de <strong class="text-slate-800">55</strong> auteurs</div>
+      </div>
+
+      <!-- Authors Cards List -->
+      <div id="authors-list-container" class="space-y-4">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 bg-white mt-12 py-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span>Référentiel Psychomoteur — Base clinique et théorique interactive</span>
+      <span>Sauvegarde locale automatique activée (<code class="text-slate-600">localStorage</code>)</span>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. INITIAL DATA (55 Auteurs & 230 Termes complets issus du tableau Excel)
+    // =========================================================================
+    const INITIAL_DATA = [
+      {"name": "Albert Coeman", "profession": "Kinésithérapeute, psychomotricien / thérapeute en psychomotricité et formateur", "terms": [{"term": "Appuis, soutiens, poussées", "definition": "mécanismes tonico-posturaux fondamentaux qui permettent à l'enfant de s'ancrer dans l'espace, de se redresser et d'organiser ses mouvements."}, {"term": "Axe corporel", "definition": "ligne de référence centrale du corps assurant l'équilibre, la stabilité et l'orientation spatiale."}, {"term": "Engagement corporel", "definition": "implication active et globale du corps de l'enfant (et du thérapeute) dans l'action et la relation."}, {"term": "Structuration psychomotrice & spatialité du jeune enfant", "definition": "construction progressive du rapport au corps, à l'espace et aux repères moteurs au fil du développement."}], "references": ["Coeman, A., & Raulier, M. (2004). De la naissance à la marche : les étapes du développement psychomoteur de l'enfant. Étoile d'Herbe."]},
+      {"name": "Marie Raulier", "profession": "Psychomotricienne, puéricultrice et formatrice", "terms": [{"term": "Étapes du développement psychomoteur (0–3 ans)", "definition": "évolution progressive des compétences posturales, motrices, sensorielles et relationnelles du tout-petit."}, {"term": "Appuis et soutiens", "definition": "bases corporelles et relationnelles indispensables pour sécuriser la posture et favoriser la mobilité autonome."}, {"term": "Engagement corporel dans le cadre quotidien", "definition": "mobilisation du corps dans les routines, les soins et les jeux ordinaires pour soutenir la construction psychomotrice."}], "references": ["Coeman, A., & Raulier, M. (2004). De la naissance à la marche : les étapes du développement psychomoteur de l'enfant. Étoile d'Herbe.", "Raulier, M. (2012). Accompagner l'enfant dans son développement psychomoteur."]},
+      {"name": "Allan Schore", "profession": "Psychologue, chercheur en neurobiologie du développement et professeur (UCLA)", "terms": [{"term": "Régulation affective dyadique", "definition": "co-régulation des états émotionnels entre le nourrisson et son donneur de soins via des échanges interactifs et communicatifs."}, {"term": "Neurobiologie interpersonnelle", "definition": "approche reliant les interactions relationnelles précoces à la maturation et au fonctionnement des circuits cérébraux."}, {"term": "Cerveau droit émotionnel", "definition": "hémisphère cérébral dominant dans les premières années pour le traitement implicite des émotions, du stress et de la communication non verbale."}, {"term": "Attachement et maturation du cortex orbitofrontal", "definition": "influence des liens d'attachement précoces sur le développement des zones frontales impliquées dans la régulation émotionnelle et comportementale."}], "references": ["Schore, A. N. (1994). Affect Regulation and the Origin of the Self. Lawrence Erlbaum.", "Schore, A. N. (2003). Affect Dysregulation and Disorders of the Self. W. W. Norton.", "Schore, A. N. (2008). La régulation affective et la réparation du soi. Éditions du CIG."]},
+      {"name": "André Bullinger", "profession": "Psychologue du développement et professeur émérite (Université de Genève)", "terms": [{"term": "Instrument corporel", "definition": "ensemble des moyens sensori-moteurs et tonico-posturaux dont dispose l'organisme pour agir sur le milieu et se construire."}, {"term": "Milieu / environnement", "definition": "ensemble des sollicitations physiques, sensorielles, matérielles et humaines avec lesquelles l'organisme interagit."}, {"term": "Flux sensoriels", "definition": "courants d'informations sensorielles (visuels, auditifs, tactiles, vestibulaires, proprioceptifs) provenant de l'intérieur ou de l'extérieur du corps."}, {"term": "Organisme", "definition": "totalité biologique soumise aux lois physiques et physiologiques, en interaction constante avec son milieu."}, {"term": "Équilibration tonico-posturale", "definition": "ajustement continu des tensions musculaires et de la posture face à la gravité et aux flux sensoriels."}, {"term": "Enveloppe corporelle", "definition": "frontière sensorielle et tonique permettant de délimiter le dedans et le dehors et d'unifier les perceptions."}, {"term": "Espace sensori-moteur", "definition": "espace structuré par l'articulation entre les perceptions sensorielles, les postures et les actions motrices."}], "references": ["Bullinger, A. (2004). Le développement sensori-moteur de l'enfant et ses avatars (Tome 1). Érès.", "Bullinger, A. (2015). Le développement sensori-moteur de l'enfant et ses avatars (Tome 2). Érès."]},
+      {"name": "André Lapierre", "profession": "Kinésithérapeute, psychopédagogue et théoricien de la psychomotricité", "terms": [{"term": "Psychomotricité relationnelle", "definition": "approche thérapeutique et éducative centrée sur le vécu corporel, l'expression émotionnelle et la relation à l'autre."}, {"term": "Vécu corporel", "definition": "expérience subjective et globale du corps ressentie à travers les sensations, les émotions et le mouvement."}, {"term": "Tonus relationnel / dialogue tonique", "definition": "échanges de tensions musculaires et d'ajustements posturaux porteurs de sens émotionnel et relationnel."}, {"term": "Symbolisation motrice", "definition": "passage d'une décharge ou d'un geste moteur brut à une représentation symbolique via le jeu et l'expression corporelle."}, {"term": "Éducation psychomotrice", "definition": "démarche visant l'épanouissement global de la personne à travers l'expérience corporelle et motrice."}], "references": ["Lapierre, A., & Aucouturier, B. (1975). La symbolique du mouvement. Épi.", "Lapierre, A., & Aucouturier, B. (1982). Le corps et l'inconscient dans l'éducation et la thérapie. Doin.", "Lapierre, A., & Lapierre, A. (1997). La psychomotricité relationnelle."]},
+      {"name": "Anne Van Den Brill", "profession": "Psychomotricienne et coordinatrice / enseignante en formation en psychomotricité", "terms": [{"term": "Formation corporelle", "definition": "travail expérientiel sur son propre corps, son tonus, sa posture et son engagement afin de développer une posture professionnelle clinique."}, {"term": "Cadre et médiation psychomotrice", "definition": "organisation sécurisante du temps, de l'espace, des règles et des objets/activités pour soutenir le processus thérapeutique."}, {"term": "Accompagnement clinique", "definition": "présence étayante et ajustée auprès d'une personne ou d'un groupe en respectant son rythme et son histoire."}], "references": ["Publications et communications cliniques en formation en psychomotricité (Belgique francophone / HEPN – répertoire professionnel)."]},
+      {"name": "Baruch Spinoza", "profession": "Philosophe rationaliste", "terms": [{"term": "Conatus", "definition": "effort ou tendance essentielle de tout être à persévérer dans son être et à accroître sa puissance d'agir et de penser."}, {"term": "Affects (affectus : joie, tristesse, désir)", "definition": "modifications du corps et de l'esprit qui augmentent (joie) ou diminuent (tristesse) la puissance d'agir, articulées autour du désir."}, {"term": "Parallélisme / unité corps-esprit (attributs de la substance)", "definition": "conception selon laquelle le corps et l'esprit ne sont pas deux substances séparées, mais l'expression sous deux attributs différents d'une même réalité."}, {"term": "Raison", "definition": "mode de connaissance permettant de comprendre les causes et les liens nécessaires des choses plutôt que de subir des idées confuses."}, {"term": "Adéquation des idées", "definition": "justesse d'une idée claire et distincte qui exprime l'essence d'une chose et favorise l'autonomie psychique."}, {"term": "Puissance d'agir", "definition": "capacité effective d'un individu à agir, à comprendre et à transformer ses affects de manière active."}, {"term": "Béatitude / liberté", "definition": "état d'apaisement et d'autonomie intérieure atteint par la compréhension rationnelle et l'amour intellectuel de la nature/de Dieu."}], "references": ["Spinoza, B. (1677). Éthique (Parties II et III).", "Spinoza, B. (1677). Éthique (Parties IV et V).", "Spinoza, B. (1661/1677). Traité de la réforme de l'entendement."]},
+      {"name": "Benoît Lesage", "profession": "Médecin, docteur en sciences humaines, danseur, formateur en danse-thérapie et enseignant en psychomotricité", "terms": [{"term": "Anatomie psychomotrice", "definition": "lecture du corps unissant repères anatomiques, physiologiques et significations psychiques et relationnelles."}, {"term": "Corporéité", "definition": "manière singulière dont un sujet habite, ressent et exprime son corps dans le monde et dans la relation."}, {"term": "Étayage corporel", "definition": "soutien postural, tonique et relationnel qui aide le sujet à se structurer et à se sentir contenu."}, {"term": "Cohérence posturale", "definition": "harmonie dynamique entre l'alignement corporel, l'équilibre tonique et l'intention d'action ou de relation."}, {"term": "Expressivité du geste", "definition": "valeur communicative, émotionnelle et symbolique portée par le mouvement au-delà de sa seule efficacité mécanique."}, {"term": "Instauration du corps", "definition": "processus continu par lequel le corps se construit et s'approprie comme lieu d'existence et d'identité."}], "references": ["Lesage, B. (2006). La danse dans le processus thérapeutique. Érès.", "Lesage, B. (2012). Jalons pour une pratique psychocorporelle : structure, étayage, mouvement et relation. Érès."]},
+      {"name": "Bernard Aucouturier", "profession": "Psychomotricien et psychologue", "terms": [{"term": "Pratique psychomotrice aucouturière (PPA)", "definition": "approche éducative et thérapeutique fondée sur le jeu spontané, l'expressivité motrice et l'accompagnement psychomoteur."}, {"term": "Expressivité motrice", "definition": "manière dont l'enfant manifeste ses émotions, son histoire et son monde interne par le mouvement, la posture et le jeu."}, {"term": "Fantasme d'action", "definition": "représentation inconsciente associée au mouvement et au jeu (ex. : détruire/construire, être avalé/recraché, se cacher/apparaître)."}, {"term": "Plaisir sensori-moteur", "definition": "éprouvé jubilatoire lié aux sensations corporelles, au mouvement, à l'équilibre, au déséquilibre et aux jeux d'enveloppe."}, {"term": "Paravent / enveloppe", "definition": "espace ou dispositif (matériel, corporel ou symbolique) qui protège, délimite et transforme les sollicitations pour favoriser la sécurité."}, {"term": "Décentration", "definition": "capacité progressive à prendre de la distance par rapport à l'action brute et à l'émotion immédiate pour accéder à la représentation."}, {"term": "Processus de symbolisation", "definition": "transformation progressive des éprouvés corporels et émotionnels en représentations mentales, jeux symboliques et langage."}], "references": ["Aucouturier, B. (2005). Les fantasmes d'action et la pratique psychomotrice. De Boeck.", "Aucouturier, B., Darrault, I., & Empinet, J.-L. (1984). La pratique psychomotrice : rééducation et thérapie. Doin."]},
+      {"name": "Bernard Golse", "profession": "Pédopsychiatre, psychanalyste et professeur émérite de psychiatrie de l'enfant et de l'adolescent", "terms": [{"term": "Intercorporéité", "definition": "rencontre et résonance réciproque des corps et des éprouvés sensori-moteurs dans la relation intersubjective."}, {"term": "Intersubjectivité", "definition": "partage d'états mentaux, d'intentions et d'émotions entre deux sujets (notamment entre le bébé et l'adulte)."}, {"term": "Corps propre / corps érogène / corps imaginaire / corps symbolique", "definition": "différentes dimensions du corps chez l'humain, articulant l'expérience vécue, le plaisir/les pulsions, les représentations fantasmatiques et l'inscription dans le langage/la culture."}, {"term": "Filiation et affiliation", "definition": "inscription généalogique (liens de parenté et d'origine) et élargissement des liens sociaux et culturels au fil du développement."}, {"term": "Bisexualité psychique", "definition": "articulation interne des positions identificatoires et relationnelles masculines et féminines chez tout sujet."}], "references": ["Golse, B. (2006). L'être-bébé. PUF.", "Golse, B., & Roussillon, R. (2010). La naissance de l'objet. PUF."]},
+      {"name": "Boris Cyrulnik", "profession": "Neuropsychiatre, psychanalyste et éthologue", "terms": [{"term": "Résilience", "definition": "capacité d'un individu ou d'un groupe à se reconstruire et à reprendre un développement après un traumatisme ou une adversité grave."}, {"term": "Tuteur de résilience", "definition": "personne, lieu, activité ou repère culturel qui offre un soutien affectif et symbolique permettant de surmonter l'épreuve."}, {"term": "Attachement", "definition": "lien affectif profond et durable qui sécurise l'enfant et soutient sa confiance dans la relation."}, {"term": "Niche sensorielle et affective", "definition": "environnement premier fait de sensations, d'odeurs, de voix, de contacts et d'attentions qui façonne les premiers repères."}, {"term": "Récit / narration", "definition": "mise en mots ou en histoire de l'expérience vécue permettant de donner du sens à ce qui a été subi."}], "references": ["Cyrulnik, B. (1999). Un merveilleux malheur. Odile Jacob.", "Cyrulnik, B. (2001). Les vilains petits canards. Odile Jacob."]},
+      {"name": "Carl Rogers", "profession": "Psychologue humaniste et psychothérapeute", "terms": [{"term": "Approche centrée sur la personne (ACP)", "definition": "méthode thérapeutique et relationnelle plaçant la personne, son expérience et son autonomie au cœur de l'accompagnement."}, {"term": "Congruence / authenticité", "definition": "accord juste entre ce que le thérapeute ressent intérieurement, ce qu'il vit et ce qu'il exprime dans la relation."}, {"term": "Considération positive inconditionnelle", "definition": "accueil chaleureux et non jugeant de la personne, indépendamment de ses comportements ou de ses réussites."}, {"term": "Écoute empathique", "definition": "capacité à comprendre le cadre de référence interne de l'autre avec sensibilité, comme si l'on était l'autre sans perdre sa propre identité."}, {"term": "Tendance à l'actualisation", "definition": "impulsion naturelle de l'organisme à se développer, se différencier et réaliser son potentiel."}], "references": ["Rogers, C. R. (1951). Client-Centered Therapy. Houghton Mifflin.", "Rogers, C. R. (1961). Le développement de la personne. Dunod."]},
+      {"name": "Carol & Byron Norton", "profession": "Psychothérapeutes / psychologues spécialisés en thérapie par le jeu (Play Therapy)", "terms": [{"term": "Experiential Play Therapy (EPT)", "definition": "approche de thérapie par le jeu centrée sur l'expérience émotionnelle directe et la relation thérapeutique plutôt que sur la seule interprétation verbale."}, {"term": "Jeu métaphorique", "definition": "utilisation symbolique des jouets, scénarios et mises en scène pour exprimer et transformer des conflits ou traumatismes."}, {"term": "Régulation du système nerveux dans le jeu", "definition": "apaisement et rééquilibrage des réactions d'alerte ou de sidération grâce à des expériences ludiques sécurisantes."}, {"term": "Réparation du lien d'attachement", "definition": "restauration d'un lien de confiance et de sécurité émotionnelle à travers la relation thérapeutique."}], "references": ["Norton, C. C., & Norton, B. E. (1997). Reaching Children Through Play Therapy: An Experiential Approach. White Apple Press."]},
+      {"name": "Catherine Potel", "profession": "Psychomotricienne, psychothérapeute et docteure en psychopathologie", "terms": [{"term": "Corps souffrant / corps contenant", "definition": "double dimension du corps pouvant être le lieu d'une douleur/d'un symptôme tout en servant d'enveloppe et de soutien psychique."}, {"term": "Enveloppes psychocorporelles", "definition": "frontières et contenants corporels et psychiques qui délimitent le sujet et régulent les échanges avec l'extérieur."}, {"term": "Symbolisation par le corps", "definition": "élaboration et mise en forme des éprouvés archaïques ou traumatiques à travers le mouvement, le tonus et la médiation corporelle."}, {"term": "Clinique du lien", "definition": "approche thérapeutique attentive à la qualité, aux ruptures et à la restauration des liens relationnels et corporels."}], "references": ["Potel, C. (2010). Être psychomotricien : un métier du présent, un métier d'avenir. Érès.", "Potel, C. (2015). Le corps et l'eau : une médiation en psychomotricité. Érès."]},
+      {"name": "Christian Ballouard", "profession": "Psychomotricien et auteur", "terms": [{"term": "Cadre thérapeutique contenant", "definition": "ensemble des repères stables (temps, espace, règles, attitude du psychomotricien) qui sécurise et rend possible le travail psychique."}, {"term": "Médiations corporelles", "definition": "supports et activités corporels utilisés comme tiers facilitant l'expression, la relation et la symbolisation."}, {"term": "Transfert primaire et secondaire", "definition": "réactualisation dans la relation thérapeutique de modes relationnels précoces/archaïques (primaire) ou de liens/conflits plus élaborés (secondaire)."}, {"term": "Troubles psychomoteurs (inhibition, instabilité, dyspraxie)", "definition": "manifestations cliniques touchant l'organisation tonico-posturale, l'action et la régulation motrice (repli/retenue, agitation/dispersion, difficultés de coordination/planification gestuelle)."}], "references": ["Ballouard, C. (2003). Le travail du psychomotricien. Dunod.", "Ballouard, C. (2008). L'aide-mémoire de psychomotricité. Dunod."]},
+      {"name": "Daniel Courberand", "profession": "Psychomotricien et psychothérapeute", "terms": [{"term": "Corps comme lieu de l'aventure psychique", "definition": "conception du corps comme espace privilégié où s'éprouvent, se jouent et se transforment les mouvements psychiques."}, {"term": "Enveloppes corporelles", "definition": "limites sensori-motrices et psychiques permettant d'éprouver une unité et de contenir les angoisses."}, {"term": "Groupes thérapeutiques en psychomotricité", "definition": "dispositifs collectifs favorisant la socialisation, l'étayage par les pairs et l'expérimentation corporelle partagée."}, {"term": "Clinique de l'enfant sans langage", "definition": "approche adaptée aux enfants qui ne communiquent pas ou peu par la parole, s'appuyant sur le corps, le tonus et les médiations non verbales."}], "references": ["Courberand, D. (2013). La psychomotricité, une aventure psychique. In Press.", "Courberand, D. (2018). Clinique psychomotrice de l'enfant."]},
+      {"name": "Daniel Stern", "profession": "Psychiatre et psychanalyste", "terms": [{"term": "Sens de soi (sense of self : émergent, nucléaire, subjectif, verbal, narratif)", "definition": "sentiment continu et évolutif d'exister et d'être un agent distinct, se complexifiant par strates au cours du développement."}, {"term": "Accordage affectif (affect attunement)", "definition": "comportement par lequel l'adulte reflète et partage la qualité émotionnelle/l'intensité d'un éprouvé du bébé sans simple imitation littérale."}, {"term": "Enveloppe protonarrative", "definition": "organisation temporelle et dynamique d'une expérience vécue (avec début, tension/point culminant, résolution) formant une matrice pré-verbale de récit."}, {"term": "RIGs (représentations d'interactions généralisées)", "definition": "schémas internes construits à partir de la répétition d'interactions vécues avec l'entourage, guidant les attentes relationnelles."}], "references": ["Stern, D. N. (1985). Le monde interpersonnel du nourrisson. PUF.", "Stern, D. N. (1995). La constellation maternelle. Calmann-Lévy."]},
+      {"name": "Didier Anzieu", "profession": "Psychanalyste et professeur de psychologie clinique", "terms": [{"term": "Moi-peau", "definition": "figuration psychique par laquelle le moi de l'enfant se représente lui-même comme un moi qui contient les contenus psychiques, à partir de l'expérience de la peau."}, {"term": "Enveloppe psychique", "definition": "structure pare-excitations et contenante qui délimite l'espace psychique interne et permet les échanges avec l'environnement."}, {"term": "Fonctions du Moi-peau", "definition": "ensemble des neuf fonctions analogues à celles de la peau (maintien/contenance, pare-excitation, individuation, intersensorialité, étayage sur la pulsion sexuelle, sexualisation/recharge libidinale, inscription des traces, plus l'aspect toxique si défaillant)."}], "references": ["Anzieu, D. (1985). Le Moi-peau. Dunod.", "Anzieu, D. et al. (1987). Les enveloppes psychiques. Dunod."]},
+      {"name": "Donald W. Winnicott", "profession": "Pédiatre et psychanalyste", "terms": [{"term": "Objet transitionnel", "definition": "objet matériel (comme un doudou) choisi par le bébé qui aide à passer de la relation fusionnelle/primaire à l'environnement extérieur et apaise l'angoisse de séparation."}, {"term": "Espace / aire transitionnelle", "definition": "zone intermédiaire d'expérience (lieu du jeu, de la créativité et de la culture) située entre la réalité interne subjective et la réalité extérieure partagée."}, {"term": "Holding", "definition": "manière dont l'environnement (et le thérapeute) porte, soutient physiquement et psychiquement le bébé et assure une continuité d'existence."}, {"term": "Handling", "definition": "manière dont le bébé est manipulé et soigné physiquement, favorisant l'intégration psychosomatique et le sentiment d'habiter son corps."}, {"term": "Object presenting", "definition": "présentation graduelle et adaptée de la réalité extérieure au bébé afin qu'il puisse la rencontrer sans être submergé."}, {"term": "Mère suffisamment bonne (good enough mother)", "definition": "mère qui répond d'abord très finement aux besoins du bébé puis se désadapte progressivement au rythme de sa maturation."}, {"term": "True self / false self", "definition": "organisation authentique et spontanée de la personnalité (true self) par opposition à une façade défensive et soumise aux attentes extérieures (false self)."}, {"term": "Squiggle", "definition": "jeu de gribouillage alterné entre le thérapeute et l'enfant permettant de faire émerger des pensées, émotions et fantasmes."}], "references": ["Winnicott, D. W. (1958). De la pédiatrie à la psychanalyse. Payot.", "Winnicott, D. W. (1971). Jeu et réalité : l'espace potentiel. Gallimard."]},
+      {"name": "Emile Dupré", "profession": "Neurologue et psychiatre", "terms": [{"term": "Débilité motrice", "definition": "ensemble de particularités motrices (maladresse, syncinésies, paratonie, hypertonie) observées chez certains sujets et associées à des fragilités neuropsychiques."}, {"term": "Paratonie", "definition": "difficulté à relâcher volontairement ses muscles, entraînant une résistance ou une raideur lors de la mobilisation passive."}, {"term": "Syncinésies", "definition": "mouvements involontaires et parasites qui apparaissent dans une partie du corps lors de l'exécution d'un mouvement volontaire dans une autre partie."}, {"term": "Psychomotricité (co-élaboration du concept)", "definition": "notion introduite pour souligner les liens étroits entre le fonctionnement moteur, le tonus et la vie psychique."}], "references": ["Dupré, E. (1907). La débilité motrice dans ses rapports avec la débilité mentale et l'insuffisance pyramidale.", "Dupré, E. (1925). Pathologie de l'imagination et de l'émotivité. Payot."]},
+      {"name": "Emmi Pikler", "profession": "Pédiatre", "terms": [{"term": "Motricité libre", "definition": "développement moteur spontané où l'enfant découvre et maîtrise seul les postures et déplacements, sans être mis ni maintenu artificiellement dans des positions qu'il n'a pas acquises par lui-même."}, {"term": "Activité autonome", "definition": "initiative propre de l'enfant qui choisit et explore ses jeux et mouvements à son rythme dans un environnement adapté."}, {"term": "Soin relationnel / soins attentifs", "definition": "moments de soins (change, repas, habillage) vécus comme des temps de rencontre, d'échange et de coopération plutôt que de simple exécution technique."}, {"term": "Sécurité affective", "definition": "sentiment de stabilité et de confiance issu d'une relation prévisible, respectueuse et disponible avec l'adulte."}, {"term": "Posture / gestuelle respectueuse", "definition": "attitude calme, lente et attentive de l'adulte qui laisse l'enfant participer activement et préserve sa dignité."}], "references": ["Pikler, E. (1969/1979). Se mouvoir en liberté dès le premier âge. PUF.", "David, M., & Appell, G. (1973). Lóczy ou le maternage insolite. Érès."]},
+      {"name": "Françoise Désobeau", "profession": "Orthophoniste, psychomotricienne et thérapeute psychocorporelle", "terms": [{"term": "Thérapie psychomotrice à médiation corporelle", "definition": "prise en charge utilisant le mouvement, le jeu et le corps comme vecteurs d'expression et de transformation psychique."}, {"term": "Corps et langage", "definition": "articulation et échanges dynamiques entre les manifestations corporelles/non verbales et la mise en mots ou la symbolisation."}, {"term": "Communication non verbale et gestuelle", "definition": "transmission de messages, d'émotions et d'intentions par la posture, le regard, la mimique et le geste."}], "references": ["Desobeau, F. (2009). La thérapie psychomotrice : du corps vécu au corps parlé.", "Contributions cliniques dans la revue Thérapie Psychomotrice et Recherches."]},
+      {"name": "Françoise Dolto", "profession": "Psychanalyste et pédiatre", "terms": [{"term": "Image inconsciente du corps (IIC) vs schéma corporel", "definition": "l'IIC est la synthèse vivante et inconsciente de nos expériences émotionnelles et relationnelles (propre à chacun, liée au désir), tandis que le schéma corporel est la représentation neurologique/anatomique et perceptive commune à l'espèce."}, {"term": "Castration symboligène", "definition": "épreuve structurante et humanisante (orale, anale, génitale, etc.) qui invite l'enfant à renoncer à une satisfaction immédiate ou fusionnelle pour accéder à plus d'autonomie et de symbolisation."}, {"term": "Complexe du homard", "definition": "image illustrant le moment où l'enfant quitte une enveloppe/protection devenue trop étroite et se retrouve temporairement vulnérable avant de former une nouvelle organisation."}, {"term": "« Tout est langage »", "definition": "idée que tout comportement, symptôme, geste ou silence d'un sujet a une valeur expressive et relationnelle porteur de sens."}], "references": ["Dolto, F. (1984). L'image inconsciente du corps. Seuil.", "Dolto, F. (1981). Au jeu du désir. Seuil."]},
+      {"name": "Françoise Giromini", "profession": "Psychomotricienne, cadre de santé / enseignante et auteure en psychomotricité", "terms": [{"term": "Approche globale psychomotrice", "definition": "lecture et accompagnement de la personne envisageant ensemble le corps, l'émotion, la cognition et la relation."}, {"term": "Clinique et théorisation de la psychomotricité", "definition": "élaboration des repères théoriques et méthodologiques guidant l'observation, l'évaluation et l'intervention psychomotrices."}, {"term": "Corps et psyché", "definition": "interaction constante et réciproque entre les processus corporels et les mouvements psychiques."}], "references": ["Giromini, F., Albaret, J.-M., & Scialom, P. (2011/2015). Manuel d'enseignement de psychomotricité (Tomes 1 à 3). De Boeck Supérieur."]},
+      {"name": "Geneviève Haag", "profession": "Pédopsychiatre et psychanalyste", "terms": [{"term": "Identification adhésive", "definition": "mécanisme très précoce consistant à se coller ou s'adosser à une surface, une forme ou un objet pour maintenir un sentiment d'existence et éviter l'effondrement."}, {"term": "Enveloppe / carapace corporelle", "definition": "organisation défensive ou contenante du corps construite pour se protéger des angoisses d'anéantissement ou de morcellement."}, {"term": "Filiation / structuration de l'image du corps", "definition": "construction progressive du sentiment d'unité, d'axe et d'appartenance familiale et symbolique."}, {"term": "Retour sur soi", "definition": "mouvement d'intériorisation et de rassemblement des perceptions qui permet au sujet de se sentir unifié et présent à lui-même."}, {"term": "Équilibre / axe corporel", "definition": "verticalité et centralité corporelles associées au sentiment d'identité et de sécurité interne."}], "references": ["Haag, G. (1985). « La mère et le bébé dans les deux moitiés du corps ». Neuropsychiatrie de l'Enfance et de l'Adolescence.", "Haag, G. (2018). Le Moi corporel : autour de la clinique de l'autisme. PUF."]},
+      {"name": "Gert Holstege", "profession": "Neuroanatomiste et neuroscientifique", "terms": [{"term": "Système moteur émotionnel (Emotional Motor System - EMS) vs système moteur somatique", "definition": "l'EMS régule les postures, comportements et réponses physiologiques liées aux émotions et à la survie (défense, reproduction, vocalisation), distinct du système somatique orienté vers les mouvements volontaires et précis."}, {"term": "Substance grise périaqueducale (PAG)", "definition": "structure clé du tronc cérébral intégrant les signaux émotionnels et coordonnant des réponses motrices et autonomes adaptatives."}, {"term": "Noyau rétroambigu (nucleus retroambiguus)", "definition": "structure bulbaire recevant des projections de la PAG et relayant des commandes vers les motoneurones impliqués dans la respiration, la vocalisation et la posture."}], "references": ["Holstege, G. (1992). « The emotional motor system ». European Journal of Morphology.", "Holstege, G., Bandler, R., & Saper, C. B. (1996). The Emotional Motor System. Elsevier."]},
+      {"name": "Giselle Soubiran", "profession": "Médecin, neuropsychiatre et rééducatrice en psychomotricité", "terms": [{"term": "Éducation psychomotrice", "definition": "démarche éducative et préventive visant à harmoniser le développement moteur, perceptif, cognitif et affectif de l'enfant."}, {"term": "Relaxation psychomotrice", "definition": "technique de détente corporelle et de régulation tonique favorisant la conscience du corps et l'apaisement psychique."}, {"term": "Schéma corporel", "definition": "conscience et connaissance de son corps, de ses segments, de sa posture et de ses limites dans l'espace."}, {"term": "Structuration spatio-temporelle", "definition": "organisation progressive des repères d'espace (orientation, latéralité, distances) et de temps (rythme, succession, durée)."}], "references": ["Soubiran, G. B., & Mazo, P. (1965). La réadaptation scolaire des enfants intelligents par la rééducation psychomotrice. Doin.", "Soubiran, G. B., & Coste, J.-C. (1975). Psychomotricité et relaxation psychosomatique. Doin."]},
+      {"name": "Henri Wallon", "profession": "Psychologue, philosophe et homme politique", "terms": [{"term": "Dialogue tonique", "definition": "échange premier, non verbal et émotionnel entre l'enfant et son entourage à travers les variations de tonus musculaire et d'attitude."}, {"term": "Émotion comme fonction sociale et motrice", "definition": "rôle fondamental de l'émotion qui relie l'organisme au milieu humain et s'exprime d'abord par des réactions toniques et posturales."}, {"term": "Stades du développement psychomoteur", "definition": "succession d'étapes marquées par des crises et des réorganisations entre le biologique, l'affectif, le moteur et le cognitif."}, {"term": "Alternance fonctionnelle / prévalence motrice puis affective", "definition": "succession dynamique dans le développement où prédominent tour à tour l'orientation vers l'action/le monde extérieur et l'orientation vers l'affectivité/l'intériorité."}], "references": ["Wallon, H. (1925). L'enfant turbulent. Alcan.", "Wallon, H. (1934). Les origines du caractère chez l'enfant. Boivin / PUF.", "Wallon, H. (1941). L'évolution psychologique de l'enfant. Armand Colin."]},
+      {"name": "Ivan Darrault", "profession": "Sémioticien et chercheur en sémiotique", "terms": [{"term": "Psychosémiotique", "definition": "approche croisant la psychomotricité et la sémiotique pour analyser la production de sens dans les conduites corporelles et relationnelles."}, {"term": "Approche sémiotique de la thérapie psychomotrice", "definition": "lecture des gestes, postures, rythmes et interactions comme des systèmes de signes porteurs de significations."}, {"term": "Corps signifiant", "definition": "corps envisagé comme un espace d'expression et de signification où s'inscrivent des récits et des intentions."}, {"term": "Narrativité corporelle", "definition": "organisation dynamique et temporelle des actions et mouvements du sujet formant une trame expressive."}], "references": ["Aucouturier, B., Darrault, I., & Empinet, J.-L. (1984). La pratique psychomotrice. Doin.", "Darrault-Harris, I., & Klein, J.-P. (1993). Pour une psychiatrie de l'ellipse : les aventures du sujet en création. PUF."]},
+      {"name": "Jacques Ellul", "profession": "Sociologue, théologien et philosophe", "terms": [{"term": "Technique / système technicien", "definition": "ensemble des moyens rationnellement et efficacement organisés dans chaque domaine d'activité, formant un système global interconnecté."}, {"term": "Autonomie de la technique", "definition": "tendance de la technique à évoluer selon sa propre logique et ses propres normes, échappant partiellement au contrôle moral ou politique."}, {"term": "Société de consommation / propagande", "definition": "organisation sociale marquée par la consommation de masse et l'usage systématique de la propagande pour orienter les opinions et comportements."}], "references": ["Ellul, J. (1954). La Technique ou l'Enjeu du siècle. Armand Colin.", "Ellul, J. (1962). Propagandes. Armand Colin.", "Ellul, J. (1977). Le Système technicien. Calmann-Lévy."]},
+      {"name": "Jacques Paillard", "profession": "Neurobiologiste et neurophysiologiste de la motricité", "terms": [{"term": "Commande motrice", "definition": "processus neurophysiologique par lequel le système nerveux central élabore, déclenche et ajuste l'exécution d'un mouvement."}, {"term": "Perception et action", "definition": "boucle interactive permanente où l'action transforme les perceptions et où la perception guide et corrige l'action."}, {"term": "Régulation sensorimotrice", "definition": "ajustement continu du mouvement à partir des informations sensorielles entrantes et des prédictions motrices."}, {"term": "Proprioception et extéroception", "definition": "recueil des informations issues de l'intérieur du corps (muscles, articulations, position) et de l'environnement externe (vue, toucher, audition)."}], "references": ["Paillard, J. (1976). « Tonus, posture et mouvement ». In Kayser, C. (dir.), Physiologie (Tome II). Flammarion.", "Paillard, J. (1991). Brain and Space. Oxford University Press."]},
+      {"name": "Janusz Korczak", "profession": "Médecin, pédagogue et écrivain", "terms": [{"term": "Respect de l'enfant comme personne à part entière", "definition": "reconnaissance de l'enfant comme un être humain actuel et complet, digne de considération, et non comme un simple être en devenir."}, {"term": "Droit de l'enfant", "definition": "affirmation des droits fondamentaux de l'enfant, notamment le droit d'être respecté, d'être entendu et de vivre dans un cadre digne."}, {"term": "Autonomie et citoyenneté enfantine", "definition": "participation active des enfants à la vie collective et à l'élaboration des règles communes (notamment par des institutions comme le tribunal ou le parlement des enfants)."}], "references": ["Korczak, J. (1919/1998). Comment aimer un enfant. Robert Laffont.", "Korczak, J. (1929/2009). Le droit de l'enfant au respect. Fabert."]},
+      {"name": "Jean Epstein", "profession": "Cinéaste et théoricien du cinéma", "terms": [{"term": "Photogénie", "definition": "qualité propre à l'image cinématographique qui révèle et amplifie la valeur expressive et émotionnelle d'un être ou d'un objet par le mouvement et le cadrage."}, {"term": "Cinéphilie / mouvement cinématographique", "definition": "passion et réflexion sur le cinéma comme art du mouvement, du rythme et de la perception renouvelée du réel."}, {"term": "Conscience machine / intelligence du cinéma", "definition": "capacité du dispositif cinématographique à produire une perception non humaine, mobile et révélatrice du monde."}], "references": ["Epstein, J. (1921). Bonjour Cinéma. Éditions de la Sirène.", "Epstein, J. (1946). L'Intelligence d'une machine. Jacques Melot."]},
+      {"name": "Jean Piaget", "profession": "Psychologue du développement et épistémologue", "terms": [{"term": "Assimilation", "definition": "intégration de nouvelles informations ou expériences dans des structures ou schèmes déjà existants."}, {"term": "Accommodation", "definition": "modification des schèmes existants pour s'adapter à une situation ou un objet nouveau qui résiste à l'assimilation."}, {"term": "Équilibration", "definition": "processus d'autorégulation par lequel l'individu cherche un équilibre dynamique entre assimilation et accommodation."}, {"term": "Schèmes", "definition": "structures organisées d'actions ou de pensées (sensorimotrices puis opératoires) transférables et généralisables à des situations analogues."}, {"term": "Stades du développement cognitif", "definition": "étapes successives de construction de l'intelligence (sensorimoteur, préopératoire, opératoire concret, formel)."}, {"term": "Permanence de l'objet", "definition": "compréhension que l'objet continue d'exister même lorsqu'il échappe temporairement à la perception directe."}], "references": ["Piaget, J. (1936). La naissance de l'intelligence chez l'enfant. Delachaux et Niestlé.", "Piaget, J., & Inhelder, B. (1966). La psychologie de l'enfant. PUF."]},
+      {"name": "Jean-Pierre Yernaux", "profession": "Psychomotricien et formateur d'adultes", "terms": [{"term": "Psychomotricité et lien social", "definition": "rôle de l'approche psychomotrice dans le maintien, la restauration et l'enrichissement des liens relationnels et sociaux."}, {"term": "Identité professionnelle du psychomotricien", "definition": "repères déontologiques, cliniques et corporels définissant la spécificité du métier de psychomotricien."}, {"term": "Approche relationnelle et corporelle", "definition": "pratique fondée sur la rencontre, l'engagement corporel et l'ajustement mutuel."}], "references": ["Yernaux, J.-P. — Articles et interventions sur l'identité professionnelle et la clinique psychomotrice (revues francophones de psychomotricité / Belgique)."]},
+      {"name": "John Bowlby", "profession": "Psychiatre et psychanalyste", "terms": [{"term": "Théorie de l'attachement", "definition": "théorie selon laquelle le nourrisson possède une disposition biologique innée à rechercher la proximité d'un adulte protecteur pour assurer sa survie et sa sécurité."}, {"term": "Figures d'attachement", "definition": "personnes privilégiées vers lesquelles l'enfant se tourne en situation de détresse, de fatigue ou d'insécurité."}, {"term": "Base de sécurité (secure base)", "definition": "figure d'attachement fiable à partir de laquelle l'enfant peut explorer le monde et vers laquelle il peut revenir pour être rassuré."}, {"term": "Modèle interne opérant (MIO)", "definition": "représentation mentale inconsciente de soi, des autres et des relations construite à partir des expériences d'attachement."}, {"term": "Protestation / détresse / détachement", "definition": "phases réactionnelles observées chez le jeune enfant face à une séparation prolongée ou une rupture du lien d'attachement."}], "references": ["Bowlby, J. (1969/1978). Attachement et perte (Vol. 1 : L'attachement). PUF.", "Bowlby, J. (1973/1978). Attachement et perte (Vol. 2 : La séparation). PUF.", "Bowlby, J. (1988). A Secure Base. Routledge."]},
+      {"name": "Julian de Ajuriaguerra", "profession": "Neurologue et psychiatre", "terms": [{"term": "Dialogue tonique (approfondissement clinique)", "definition": "élaboration clinique de l'échange tonico-postural et affectif entre le sujet et l'autre, au cœur de la relation et de la relaxation."}, {"term": "Syndromes psychomoteurs", "definition": "ensembles organisés de troubles toniques, moteurs et relationnels (ex. : instabilité, inhibition, maladresse, tics)."}, {"term": "Organisation psychomotrice", "definition": "agencement dynamique du tonus, de la posture, du geste, de l'espace et du temps en lien avec la vie psychique."}, {"term": "Relaxation thérapeutique", "definition": "méthode de travail corporel et tonique visant la réorganisation de l'expérience corporelle et l'apaisement des tensions."}], "references": ["Ajuriaguerra, J. de (1970). Manuel de psychiatrie de l'enfant. Masson.", "Ajuriaguerra, J. de, & Cahen, M. (1960). « Tonus corporel et relation avec autrui ». Revue de Médecine Psychosomatique."]},
+      {"name": "Marc Thiry", "profession": "Kinésithérapeute, psychomotricien, haptonome et enseignant", "terms": [{"term": "Approche Snoezelen (sensorialité, sécurisation, « être » plutôt que « faire »)", "definition": "démarche d'accompagnement multisensoriel visant l'apaisement, le bien-être et la relation dans une atmosphère sécurisante et non performative."}, {"term": "Haptonomie / contact affectif", "definition": "approche centrée sur le toucher affectif, sécurisant et confirmant qui soutient l'autre dans son être."}, {"term": "Communication sensorielle", "definition": "échange fondé sur les perceptions sensorielles et la qualité du contact lorsque le langage verbal est limité ou difficile."}], "references": ["Thiry, M. — Travaux, formations et supports pédagogiques sur l'approche Snoezelen et l'accompagnement psychomoteur (Belgique / HEPN)."]},
+      {"name": "Marion Milner", "profession": "Psychanalyste et peintre", "terms": [{"term": "Espaces / zones d'illusion", "definition": "lieux psychiques intermédiaires où l'imagination, la rêverie et la création peuvent se déployer librement."}, {"term": "Créativité et activité picturale", "definition": "rôle du dessin et de la création artistique dans l'exploration de soi et l'émergence de formes nouvelles."}, {"term": "Pliable medium (médium malléable)", "definition": "matériau souple et réceptif qui se laisse modeler et transformer sans opposer une résistance rigide ou destructrice."}, {"term": "Concentration / attention non dirigée", "definition": "mode d'attention ouverte, réceptive et non forcée permettant l'émergence d'idées ou d'éprouvés implicites."}], "references": ["Milner, M. (1950). On Not Being Able to Paint. Heinemann.", "Milner, M. (1952). « Aspects of symbolism in comprehension of the not-self ». International Journal of Psycho-Analysis."]},
+      {"name": "Mihály Csíkszentmihályi", "profession": "Psychologue", "terms": [{"term": "Flow (état d'absorption / expérience optimale)", "definition": "état de concentration intense, d'engagement total et de plaisir éprouvé dans une activité qui capte pleinement l'attention."}, {"term": "Équilibre défi-compétence", "definition": "ajustement entre le niveau de difficulté de la tâche et les capacités de la personne, favorisant l'émergence du flow (ni ennui, ni anxiété)."}, {"term": "Motivation intrinsèque", "definition": "engagement dans une activité pour la satisfaction, l'intérêt ou l'expérience qu'elle procure en elle-même."}], "references": ["Csíkszentmihályi, M. (1990). Flow: The Psychology of Optimal Experience. Harper & Row (trad. fr. Vivre : la psychologie du bonheur, Robert Laffont, 2004)."]},
+      {"name": "Paul Ricoeur", "profession": "Philosophe", "terms": [{"term": "Identité narrative", "definition": "identité d'une personne qui se construit et se comprend à travers les récits qu'elle fait de sa vie et de ses actions."}, {"term": "Herméneutique", "definition": "art et théorie de l'interprétation visant à comprendre le sens des textes, des symboles et des actions humaines."}, {"term": "Soi-même comme un autre", "definition": "conception de l'identité articulant la permanence de soi dans le temps et l'altérité relationnelle et éthique."}, {"term": "Interprétation et reconnaissance", "definition": "démarche de compréhension médiatisée par les signes et les récits, associée à la quête de reconnaissance mutuelle."}], "references": ["Ricoeur, P. (1983–1985). Temps et récit (Tomes 1 à 3). Seuil.", "Ricoeur, P. (1990). Soi-même comme un autre. Seuil.", "Ricoeur, P. (2004). Parcours de la reconnaissance. Stock."]},
+      {"name": "Pierre Delion", "profession": "Pédopsychiatre et psychanalyste", "terms": [{"term": "Psychothérapie institutionnelle", "definition": "approche soignante qui travaille l'institution elle-même (vie quotidienne, espaces, réunions, collectifs) comme outil thérapeutique."}, {"term": "Fonction phorique (porter, soutenir, transporter)", "definition": "fonction de portage physique, psychique et symbolique exercée par l'équipe et l'environnement auprès de personnes en difficulté."}, {"term": "Holding institutionnel", "definition": "capacité de l'équipe et du cadre institutionnel à contenir, soutenir et maintenir une continuité de soins face aux angoisses."}, {"term": "Accueil de la psychose / de l'autisme", "definition": "démarche clinique et institutionnelle attentive au rythme, aux particularités sensorielles et à l'altérité des personnes concernées."}], "references": ["Delion, P. (2000). L'enfant autiste, le bébé et la sémiotique. PUF.", "Delion, P. (2018). Fonction phorique, holding et institution. Érès."]},
+      {"name": "René Descartes", "profession": "Philosophe et mathématicien", "terms": [{"term": "Dualisme corps-esprit (res cogitans / res extensa)", "definition": "distinction philosophique entre la substance pensante immatérielle (res cogitans) et la substance corporelle étendue dans l'espace (res extensa)."}, {"term": "Glande pinéale", "definition": "structure cérébrale que Descartes considérait comme le point de rencontre particulier entre l'âme et le corps."}, {"term": "Mécanisme corporel", "definition": "conception du corps humain (et animal) fonctionnant selon des lois physiques et mécaniques semblables à celles d'une machine."}, {"term": "Doute méthodique", "definition": "démarche consistant à suspendre provisoirement tout ce qui peut être mis en doute afin de rechercher une vérité certaine et indubitable."}], "references": ["Descartes, R. (1637). Discours de la méthode.", "Descartes, R. (1641). Méditations métaphysiques.", "Descartes, R. (1649). Les Passions de l'âme."]},
+      {"name": "René Roussillon", "profession": "Psychanalyste et professeur de psychologie clinique", "terms": [{"term": "Médium malléable", "definition": "objet ou matériau (et fonction de l'environnement/du thérapeute) qui est indéfiniment transformable, sensible, indestructible, disponible et inconditionnel pour soutenir la symbolisation."}, {"term": "Symbolisation primaire et secondaire", "definition": "la symbolisation primaire transforme les éprouvés bruts/archaïques en représentations-choses ou traces figurables ; la symbolisation secondaire les articule dans des chaînes représentatives et verbales."}, {"term": "Clivage et retour du clivé", "definition": "mécanisme par lequel des parties de la vie psychique ou d'une expérience sont séparées et tenues à distance, tout en tendant à réapparaître sous d'autres formes."}, {"term": "Associativité et jeu", "definition": "libre circulation des représentations et des mises en jeu permettant d'explorer et d'élaborer les mouvements psychiques."}, {"term": "Objet trouvé-créé", "definition": "expérience où l'objet rencontré dans la réalité externe correspond suffisamment à l'attente interne pour être à la fois découvert et subjectivement créé."}], "references": ["Roussillon, R. (1991). Paradoxes et situations limites de la psychanalyse. PUF.", "Roussillon, R. (1999). Agonie, clivage et symbolisation. PUF.", "Roussillon, R. (2008). Le jeu et l'entre-je(u). PUF."]},
+      {"name": "René Spitz", "profession": "Psychanalyste et psychiatre", "terms": [{"term": "Hospitalisme", "definition": "ensemble de troubles graves (développementaux, affectifs, somatiques et relationnels) observés chez des nourrissons placés en institution avec carence affective et relationnelle."}, {"term": "Dépression anaclitique", "definition": "tableau dépressif survenant chez un bébé après la perte brusque d'une relation affective satisfaisante et d'un objet d'attachement privilégié."}, {"term": "Organisateurs de la psyché (sourire social, angoisse du 8e mois, le « non »)", "definition": "jalons développementaux marqués par des réactions spécifiques qui signalent une réorganisation profonde de la vie psychique et relationnelle."}, {"term": "Relation d'objet", "definition": "modalité d'investissement affectif et relationnel d'un sujet envers l'autre (l'« objet » au sens psychanalytique)."}], "references": ["Spitz, R. A. (1945). « Hospitalism ». The Psychoanalytic Study of the Child.", "Spitz, R. A. (1965/1968). De la naissance à la parole : la première année de la vie. PUF."]},
+      {"name": "Rudolf Laban", "profession": "Chorégraphe, danseur et théoricien du mouvement", "terms": [{"term": "Laban Movement Analysis (LMA)", "definition": "Système d'observation, de description et d'analyse du mouvement humain (corps, effort, espace, forme)."}, {"term": "Facteurs du mouvement : flux (libre / retenu), espace (direct / indirect), poids (ferme / léger), temps (soudain / soutenu)", "definition": "Dimensions qualitatives de l'effort : Flux (continuité et contrôle : libre/fluide vs retenu/contrôlé) ; Espace (orientation et trajectoire : direct/linéaire vs indirect/souple) ; Poids (rapport à la gravité et force : ferme/fort vs léger/délicat) ; Temps (rapidité/urgence : soudain/rapide vs soutenu/progressif)."}, {"term": "Kinésphère", "definition": "Sphère d'espace personnelle entourant le corps et accessible par l'extension des membres sans déplacement du lieu d'ancrage."}], "references": ["Laban, R. (1950). The Mastery of Movement on the Stage (trad. fr. La maîtrise du mouvement, Actes Sud, 1994).", "Laban, R., & Lawrence, F. C. (1947). Effort. Macdonald & Evans."]},
+      {"name": "Sandrine Perrière", "profession": "Psychothérapeute / praticienne en accompagnement corporel", "terms": [{"term": "Approche relationnelle et corporelle / accompagnement psychocorporel", "definition": "démarche d'accompagnement attentive à la relation, au ressenti corporel et aux processus émotionnels de la personne."}], "references": ["Supports et enseignements cliniques en accompagnement relationnel et psychocorporel (à compléter selon le support de ton cours)."]},
+      {"name": "Sigmund Freud", "profession": "Neurologue et fondateur de la psychanalyse", "terms": [{"term": "Inconscient", "definition": "instance et lieu psychique regroupant des contenus refoulés ou non conscients (représentations, affects, désirs) qui agissent sur la vie psychique et les comportements."}, {"term": "Ça / moi / surmoi", "definition": "trois instances de la seconde topique : le ça (pôle pulsionnel et inconscient), le moi (instance de médiation avec la réalité, le ça et le surmoi) et le surmoi (intériorisation des interdits, exigences morales et idéaux)."}, {"term": "Pulsions (Éros / Thanatos, pulsion de vie / de mort)", "definition": "poussées dynamiques à la frontière du somatique et du psychique, orientées vers la liaison et la préservation de la vie (Éros) ou vers la déliaison, la réduction des tensions et la destruction (Thanatos)."}, {"term": "Refoulement", "definition": "mécanisme de défense par lequel des représentations ou souvenirs liés à une pulsion sont maintenus dans l'inconscient lorsque leur accès à la conscience engendrerait du déplaisir ou de l'angoisse."}, {"term": "Transfert", "definition": "déplacement sur la personne du thérapeute de sentiments, désirs, attentes et conflits inconscients issus de relations antérieures."}, {"term": "Mécanismes de défense", "definition": "opérations psychiques (souvent inconscientes) mises en jeu par le moi pour réduire l'angoisse et protéger l'équilibre psychique."}, {"term": "Stade du miroir / œdipe", "definition": "Œdipe : complexe organisateur du psychisme marqué par l'attirance ambivalente envers le parent de sexe opposé et la rivalité/identification avec le parent de même sexe."}], "references": ["Freud, S. (1900). L'Interprétation du rêve.", "Freud, S. (1915). Métapsychologie (« Pulsions et destins des pulsions », « Le refoulement »).", "Freud, S. (1923). Le Moi et le Ça."]},
+      {"name": "Sophie Marinopoulos", "profession": "Psychologue clinicienne et psychanalyste", "terms": [{"term": "Santé culturelle", "definition": "dimension culturelle et symbolique du bien-être et de la santé psychique, incluant l'accès aux arts, aux contes, aux berceuses et aux rites partagés."}, {"term": "Parentalité / naissance d'un parent", "definition": "processus de transformation psychique, identitaire et relationnel vécu par les adultes à l'arrivée d'un enfant."}, {"term": "Jeu libre et créativité de l'enfant", "definition": "espace spontané d'exploration et de création permettant à l'enfant d'éprouver sa liberté et de symboliser."}, {"term": "Berceuse / espace transitionnel et accueil familial", "definition": "supports d'apaisement, de lien et d'accueil favorisant la sécurité et la rencontre entre l'enfant et ses proches."}], "references": ["Marinopoulos, S. (2005). Dans l'intime des mères. Fayard.", "Marinopoulos, S. (2019). Une stratégie nationale pour la Santé Culturelle (Rapport ministériel)."]},
+      {"name": "Stephen Porges", "profession": "Neuroscientifique et psychologue", "terms": [{"term": "Théorie polyvagale (TPV)", "definition": "modèle neurophysiologique décrivant comment le système nerveux autonome hiérarchise les réponses de sécurité, de mobilisation et d'immobilisation selon le contexte."}, {"term": "Système vague ventral (engagement social)", "definition": "voie parasympathique favorisant le calme, la régulation, la communication faciale/vocale et la relation sociale sécurisée."}, {"term": "Système sympathique (combat/fuite)", "definition": "voie de mobilisation énergétique préparant l'organisme à l'action, à la défense ou à la fuite face à une menace."}, {"term": "Vague dorsal (figement/immobilisation)", "definition": "voie parasympathique plus archaïque associée au ralentissement, à l'économie d'énergie, au repli ou à la sidération/dissociation face à un danger extrême."}, {"term": "Neuroception", "definition": "détection inconsciente et automatique par le système nerveux des indices de sécurité, de danger ou de menace de mort dans l'environnement et les relations."}], "references": ["Porges, S. W. (2011). The Polyvagal Theory. W. W. Norton (trad. fr. La théorie polyvagale, EDP Sciences, 2021)."]},
+      {"name": "Suzanne Robert-Ouvray", "profession": "Psychomotricienne, psychologue clinicienne et auteure", "terms": [{"term": "Intégration motrice primordiale (IMP)", "definition": "processus de maturation et d'intégration des réflexes, schèmes et coordinations motrices précoces qui soutient le développement psychique et cognitif."}, {"term": "Dialogues tonico-émotionnels précoces", "definition": "échanges corporels et toniques très précoces entre le bébé et l'adulte véhiculant sécurité, émotions et repères."}, {"term": "Hypertonie / hypotonie", "definition": "variations du tonus musculaire caractérisées respectivement par un excès de tension/résistance musculaire (hypertonie) ou par un tonus diminué/relâché (hypotonie)."}, {"term": "Étapes du développement psychomoteur", "definition": "séquences d'évolution posturale, motrice et sensorielle jalonnant la construction du bébé et de l'enfant."}], "references": ["Robert-Ouvray, S. (1993). Intégration motrice et développement psychique. Desclée de Brouwer.", "Robert-Ouvray, S. (1996). L'enfant tonique et sa mère. Desclée de Brouwer."]},
+      {"name": "Sylvie Donnet", "profession": "Rééducatrice / psychomotricienne et psychologue", "terms": [{"term": "Éducation psychomotrice", "definition": "approche éducative utilisant le mouvement, le jeu et l'espace pour accompagner le développement global de l'enfant."}, {"term": "Découpage ternaire de l'espace (plaisir sensori-moteur, plaisir symbolique, pensée opératoire / création)", "definition": "organisation de l'espace d'activité en trois registres progressifs permettant le passage du jeu sensori-moteur au symbolisme puis à l'activité plus structurée/créative."}, {"term": "Décentration", "definition": "capacité à dépasser le point de vue ou l'impulsion immédiate pour adopter d'autres perspectives ou modalités d'action."}], "references": ["Donnet, S. — Travaux cliniques et pédagogiques en éducation psychomotrice (en lien avec les dispositifs d'espace ternaire de la PPA)."]},
+      {"name": "Virginie Axaline", "profession": "Psychologue", "terms": [{"term": "Thérapie par le jeu centrée sur l'enfant (Non-directive Play Therapy)", "definition": "approche thérapeutique où l'enfant dirige librement son jeu dans un cadre sécurisant tandis que le thérapeute l'accompagne sans diriger ni forcer."}, {"term": "Huit principes de la relation thérapeutique par le jeu", "definition": "règles d'attitude du thérapeute (chaleur, acceptation, permissivité, reconnaissance des sentiments, respect de l'autonomie de l'enfant, non-directivité, progressivité, limites réalistes)."}, {"term": "Acceptation inconditionnelle", "definition": "accueil de l'enfant et de ses émotions sans jugement ni critique, tout en posant des limites claires et nécessaires à la sécurité."}], "references": ["Axline, V. M. (1947). Play Therapy. Houghton Mifflin.", "Axline, V. M. (1964). Dibs in Search of Self (trad. fr. Dibs à la recherche de soi, Flammarion)."]},
+      {"name": "Wilhelm Griesinger", "profession": "Psychiatre et neurologue", "terms": [{"term": "Corrélat cérébral des maladies mentales (« les maladies mentales sont des maladies du cerveau »)", "definition": "thèse psychiatrique affirmant que les troubles mentaux s'enracinent dans des processus neurobiologiques et cérébraux."}, {"term": "Unité des psychoses", "definition": "conception selon laquelle les différentes formes de psychoses représentent des degrés ou manifestations variées d'un même processus pathologique fondamental."}], "references": ["Griesinger, W. (1845). Die Pathologie und Therapie der psychischen Krankheiten (trad. fr. Traité des maladies mentales, 1865)."]},
+      {"name": "Éric Pireyre", "profession": "Psychomotricien clinicien, formateur / enseignant en psychomotricité (pédopsychiatrie, néonatalogie, instituts de formation)", "terms": [{"term": "Angoisses corporelles archaïques", "definition": "angoisses précoces, souvent inconscientes, antérieures au langage et liées aux vécus corporels face à un afflux d'excitations non maîtrisables."}, {"term": "Naissance et vécus archaïques", "definition": "rupture du milieu liquide vers le milieu aérien, créant de nouvelles sensations tactiles et gravitaires à l'origine des premiers éprouvés d'angoisse."}, {"term": "Évolution / résurgences", "definition": "angoisses normales chez le nourrisson, surmontées au fil du développement (sans être totalement oubliées), mais pouvant devenir très invalidantes en clinique/psychiatrie ou resurgir à tout âge via la médiation corporelle."}, {"term": "Morcellement et gravité", "definition": "lecture psychomotrice des vécus de morcellement, d'effondrement et du rapport sensorimoteur/affectif à la gravité."}, {"term": "Image composite du corps", "definition": "articulation de plusieurs sous-composantes (continuité d'existence, identité, peau, intérieur du corps, tonus, sensibilité somato-viscérale, communications corporelles)."}], "references": ["Pireyre, É. W. (2011 / 2015 / 2021). Clinique de l'image du corps (notamment le chapitre sur Les angoisses corporelles archaïques et Vers une compréhension psychomotrice du morcellement). Dunod.", "Pireyre, É. W. (2024). Clinique de l'originel. Dunod.", "Pireyre, É. W. (2025). La gravité en psychomotricité : Du sensori-moteur à l'affectif."]}
+    ];
+
+    // =========================================================================
+    // 2. STATE & STORAGE MANAGEMENT
+    // =========================================================================
+    const STORAGE_KEY = 'referentiel_psychomoteur_data_v1';
+
+    let appData = []; // Array of author objects with unique IDs
+    let currentTab = 'terms';
+    let selectedLetter = 'ALL';
+    let editingTermId = null; // ID of term currently being inline-edited in Terms tab
+    let editingAuthorInfoId = null; // ID of author currently editing name/profession
+    let editingAuthorTermId = null; // ID of term being edited inside Author card
+    let editingAuthorRefKey = null; // "authorId::refIndex" being edited inside Author card
+    let expandedAuthors = new Set(); // Track which author cards are expanded
+    let highlightedAuthorId = null;
+
+    // Generate unique IDs cleanly
+    function uid(prefix = 'id') {
+      return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+    }
+
+    // Normalize raw JSON data into internal structured state with IDs
+    function hydrateData(rawArray) {
+      return rawArray.map((author, aIdx) => ({
+        id: author.id || `author_${aIdx}_${uid('a')}`,
+        name: (author.name || '').trim(),
+        profession: (author.profession || '').trim(),
+        terms: Array.isArray(author.terms)
+          ? author.terms.map((t, tIdx) => ({
+              id: t.id || `term_${aIdx}_${tIdx}_${uid('t')}`,
+              term: (t.term || '').trim(),
+              definition: (t.definition || '').trim()
+            }))
+          : [],
+        references: Array.isArray(author.references)
+          ? author.references.map(r => String(r).trim()).filter(Boolean)
+          : []
+      }));
+    }
+
+    // Load from localStorage or fallback to INITIAL_DATA
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            appData = hydrateData(parsed);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Erreur lecture localStorage, chargement des données initiales:', e);
+      }
+      appData = hydrateData(INITIAL_DATA);
+      saveData(false);
+    }
+
+    // Save to localStorage + trigger visual feedback
+    function saveData(showFeedback = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        updateGlobalCounters();
+        if (showFeedback) {
+          triggerSaveBadge();
+          showToast('Enregistré', 'Modification sauvegardée automatiquement.', 'success');
+        }
+      } catch (e) {
+        console.error('Erreur sauvegarde localStorage:', e);
+        showToast('Erreur', 'Impossible de sauvegarder localement.', 'error');
+      }
+    }
+
+    function triggerSaveBadge() {
+      const badge = document.getElementById('save-status-badge');
+      const text = document.getElementById('save-status-text');
+      if (!badge || !text) return;
+      text.textContent = 'Enregistré ✓';
+      badge.classList.remove('bg-emerald-50', 'text-emerald-700');
+      badge.classList.add('bg-teal-600', 'text-white');
+      setTimeout(() => {
+        text.textContent = 'Synchronisé';
+        badge.classList.remove('bg-teal-600', 'text-white');
+        badge.classList.add('bg-emerald-50', 'text-emerald-700');
+      }, 1600);
+    }
+
+    // =========================================================================
+    // 3. UI HELPERS: TOASTS, CONFIRMATION MODAL, NORMALIZATION
+    // =========================================================================
+    function showToast(title, message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const isError = type === 'error';
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm transition-all duration-300 transform translate-y-2 opacity-0 ${
+        isError
+          ? 'bg-rose-50 border-rose-200 text-rose-900'
+          : 'bg-slate-900 border-slate-800 text-white'
+      }`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${isError ? 'bg-rose-500' : 'bg-teal-400'} shrink-0"></span>
+        <div>
+          <span class="font-semibold">${escapeHTML(title)}</span>
+          ${message ? `<span class="text-xs opacity-85 ml-1.5">${escapeHTML(message)}</span>` : ''}
+        </div>
+      `;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2400);
+    }
+
+    let confirmCallback = null;
+    function openConfirmModal(title, message, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      confirmCallback = onConfirm;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      confirmCallback = null;
+    }
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', closeConfirmModal);
+    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+      if (typeof confirmCallback === 'function') confirmCallback();
+      closeConfirmModal();
+    });
+
+    function escapeHTML(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeText(str) {
+      return String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function getFirstLetterNormalized(str) {
+      const cleaned = normalizeText(str).replace(/^[^a-z0-9]+/, '');
+      if (!cleaned) return '#';
+      const ch = cleaned[0].toUpperCase();
+      return /[A-Z]/.test(ch) ? ch : '#';
+    }
+
+    function updateGlobalCounters() {
+      const totalAuthors = appData.length;
+      const totalTerms = appData.reduce((acc, a) => acc + a.terms.length, 0);
+      document.getElementById('counter-terms').textContent = totalTerms;
+      document.getElementById('counter-authors').textContent = totalAuthors;
+      document.getElementById('tab-badge-terms').textContent = totalTerms;
+      document.getElementById('tab-badge-authors').textContent = totalAuthors;
+    }
+
+    // =========================================================================
+    // 4. NAVIGATION BETWEEN TABS
+    // =========================================================================
+    function switchTab(tab) {
+      currentTab = tab;
+      const btnTerms = document.getElementById('tab-btn-terms');
+      const btnAuthors = document.getElementById('tab-btn-authors');
+      const viewTerms = document.getElementById('view-terms');
+      const viewAuthors = document.getElementById('view-authors');
+
+      if (tab === 'terms') {
+        btnTerms.className = 'group relative flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-clinical-teal text-clinical-teal transition-all';
+        btnAuthors.className = 'group relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-all';
+        document.getElementById('tab-badge-terms').className = 'px-2 py-0.5 text-xs rounded-full bg-teal-100 text-clinical-tealDark font-semibold';
+        document.getElementById('tab-badge-authors').className = 'px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold';
+        viewTerms.classList.remove('hidden');
+        viewAuthors.classList.add('hidden');
+        renderTermsView();
+      } else {
+        btnAuthors.className = 'group relative flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-clinical-teal text-clinical-teal transition-all';
+        btnTerms.className = 'group relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-all';
+        document.getElementById('tab-badge-authors').className = 'px-2 py-0.5 text-xs rounded-full bg-teal-100 text-clinical-tealDark font-semibold';
+        document.getElementById('tab-badge-terms').className = 'px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold';
+        viewAuthors.classList.remove('hidden');
+        viewTerms.classList.add('hidden');
+        renderAuthorsView();
+      }
+    }
+
+    // Jump directly from a Term card's Author badge to that Author's card in Tab 2
+    function navigateToAuthor(authorId) {
+      expandedAuthors.add(authorId);
+      highlightedAuthorId = authorId;
+      // Clear authors search so the target author is guaranteed visible
+      document.getElementById('authors-search-input').value = '';
+      document.getElementById('authors-search-clear').classList.add('hidden');
+      switchTab('authors');
+      setTimeout(() => {
+        const card = document.getElementById(`author-card-${authorId}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('highlight-card');
+          setTimeout(() => card.classList.remove('highlight-card'), 2000);
+        }
+        highlightedAuthorId = null;
+      }, 60);
+    }
+
+    // =========================================================================
+    // 5. TAB 1: TERMES — FILTERING, RENDERING & INLINE EDITING
+    // =========================================================================
+    function populateAuthorDropdowns() {
+      const sortedAuthors = [...appData].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+      const filterSelect = document.getElementById('terms-author-filter');
+      const currentVal = filterSelect.value;
+
+      filterSelect.innerHTML = `<option value="ALL">Tous les auteurs (${sortedAuthors.length})</option>` +
+        sortedAuthors.map(a => `<option value="${a.id}">${escapeHTML(a.name)} (${a.terms.length})</option>`).join('');
+
+      if ([...filterSelect.options].some(o => o.value === currentVal)) {
+        filterSelect.value = currentVal;
+      }
+
+      const modalSelect = document.getElementById('new-term-author');
+      if (modalSelect) {
+        modalSelect.innerHTML = sortedAuthors.map(a => `<option value="${a.id}">${escapeHTML(a.name)}</option>`).join('');
+      }
+    }
+
+    function renderAlphabetBar(availableLetters) {
+      const bar = document.getElementById('terms-alpha-bar');
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      let html = `
+        <button type="button" onclick="selectLetter('ALL')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+          selectedLetter === 'ALL'
+            ? 'bg-clinical-teal text-white shadow-2xs'
+            : 'text-slate-600 hover:bg-slate-100'
+        }">Tous</button>
+      `;
+
+      alphabet.forEach(letter => {
+        const hasItems = availableLetters.has(letter);
+        const isActive = selectedLetter === letter;
+        html += `
+          <button type="button" ${!hasItems && !isActive ? 'disabled' : ''} onclick="selectLetter('${letter}')" class="w-7 h-7 rounded-lg text-xs font-medium flex items-center justify-center transition-colors shrink-0 ${
+            isActive
+              ? 'bg-clinical-teal text-white font-semibold shadow-2xs'
+              : hasItems
+                ? 'text-slate-700 hover:bg-teal-50 hover:text-clinical-teal'
+                : 'text-slate-300 cursor-not-allowed'
+          }">${letter}</button>
+        `;
+      });
+      bar.innerHTML = html;
+    }
+
+    function selectLetter(letter) {
+      selectedLetter = letter;
+      renderTermsView();
+    }
+
+    function handleTermsFilterChange() {
+      const searchVal = document.getElementById('terms-search-input').value;
+      const clearBtn = document.getElementById('terms-search-clear');
+      if (searchVal.trim().length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderTermsView();
+    }
+
+    function clearTermsSearch() {
+      document.getElementById('terms-search-input').value = '';
+      document.getElementById('terms-search-clear').classList.add('hidden');
+      renderTermsView();
+    }
+
+    function resetTermsFilters() {
+      document.getElementById('terms-search-input').value = '';
+      document.getElementById('terms-search-clear').classList.add('hidden');
+      document.getElementById('terms-author-filter').value = 'ALL';
+      selectedLetter = 'ALL';
+      renderTermsView();
+    }
+
+    function getAllFlattenedTerms() {
+      const list = [];
+      appData.forEach(author => {
+        author.terms.forEach(t => {
+          list.push({
+            id: t.id,
+            term: t.term,
+            definition: t.definition,
+            authorId: author.id,
+            authorName: author.name,
+            authorProfession: author.profession
+          });
+        });
+      });
+      // Sort alphabetically by term name (French locale)
+      list.sort((a, b) => a.term.localeCompare(b.term, 'fr', { sensitivity: 'base' }));
+      return list;
+    }
+
+    function renderTermsView() {
+      populateAuthorDropdowns();
+      const allTerms = getAllFlattenedTerms();
+      const query = normalizeText(document.getElementById('terms-search-input').value.trim());
+      const authorFilter = document.getElementById('terms-author-filter').value;
+
+      // Determine available letters based on search & author filter
+      const preLetterFiltered = allTerms.filter(item => {
+        if (authorFilter !== 'ALL' && item.authorId !== authorFilter) return false;
+        if (query) {
+          const hay = normalizeText(`${item.term} ${item.definition} ${item.authorName} ${item.authorProfession}`);
+          if (!hay.includes(query)) return false;
+        }
+        return true;
+      });
+
+      const availableLetters = new Set(preLetterFiltered.map(item => getFirstLetterNormalized(item.term)));
+      renderAlphabetBar(availableLetters);
+
+      const filtered = preLetterFiltered.filter(item => {
+        if (selectedLetter !== 'ALL') {
+          return getFirstLetterNormalized(item.term) === selectedLetter;
+        }
+        return true;
+      });
+
+      // Summary & Reset button
+      const summaryEl = document.getElementById('terms-results-summary');
+      summaryEl.innerHTML = `Affichage de <strong class="text-slate-800">${filtered.length}</strong> terme${filtered.length > 1 ? 's' : ''} sur ${allTerms.length}`;
+
+      const hasActiveFilters = query !== '' || authorFilter !== 'ALL' || selectedLetter !== 'ALL';
+      const resetBtn = document.getElementById('terms-reset-filters-btn');
+      if (hasActiveFilters) resetBtn.classList.remove('hidden');
+      else resetBtn.classList.add('hidden');
+
+      const container = document.getElementById('terms-list-container');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-slate-800">Aucun terme trouvé</h3>
+            <p class="text-xs text-slate-500 mt-1">Essayez de modifier votre recherche ou de réinitialiser les filtres actifs.</p>
+            <button type="button" onclick="resetTermsFilters()" class="mt-4 px-4 py-2 text-xs font-medium text-clinical-teal bg-teal-50 hover:bg-teal-100 rounded-xl transition-colors">
+              Afficher tous les termes
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const sortedAuthorsForSelect = [...appData].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+      container.innerHTML = filtered.map(item => {
+        const isEditing = editingTermId === item.id;
+
+        if (isEditing) {
+          const authorOptions = sortedAuthorsForSelect.map(a =>
+            `<option value="${a.id}" ${a.id === item.authorId ? 'selected' : ''}>${escapeHTML(a.name)}</option>`
+          ).join('');
+
+          return `
+            <article class="bg-white rounded-2xl border-2 border-clinical-teal p-5 shadow-md transition-all">
+              <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                <span class="text-xs font-semibold uppercase tracking-wider text-clinical-teal flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-clinical-teal"></span>
+                  Édition immédiate du terme
+                </span>
+                <button type="button" onclick="cancelEditTerm()" class="text-xs text-slate-400 hover:text-slate-600">Annuler (Échap)</button>
+              </div>
+              <div class="space-y-3.5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Nom du terme</label>
+                    <input id="edit-term-name-${item.id}" type="text" value="${escapeHTML(item.term)}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-900 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Auteur associé</label>
+                    <select id="edit-term-author-${item.id}" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-800 focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                      ${authorOptions}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Définition clinique / théorique</label>
+                  <textarea id="edit-term-def-${item.id}" rows="3" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 leading-relaxed focus:border-clinical-teal focus:outline-none focus:ring-2 focus:ring-teal-500/20">${escapeHTML(item.definition)}</textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-1">
+                  <button type="button" onclick="cancelEditTerm()" class="px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                    Annuler
+                  </button>
+                  <button type="button" onclick="saveEditedTerm('${item.id}', '${item.authorId}')" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl shadow-xs transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    Enregistrer immédiatement
+                  </button>
+                </div>
+              </div>
+            </article>
+          `;
+        }
+
+        return `
+          <article class="group bg-white rounded-2xl border border-slate-200 hover:border-teal-300/90 p-5 shadow-2xs hover:shadow-sm transition-all">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div class="space-y-2 flex-1">
+                <div class="flex flex-wrap items-center gap-2.5">
+                  <h2 class="text-base font-semibold text-slate-900 leading-snug">${escapeHTML(item.term)}</h2>
+                  <button type="button" onclick="navigateToAuthor('${item.authorId}')" title="Voir la fiche complète de ${escapeHTML(item.authorName)}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-clinical-tealLight text-clinical-tealDark border border-teal-200/80 hover:bg-teal-100 transition-colors">
+                    <svg class="w-3 h-3 text-clinical-teal" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    <span>${escapeHTML(item.authorName)}</span>
+                  </button>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed">${escapeHTML(item.definition)}</p>
+                <div class="pt-1 flex items-center gap-1.5 text-xs text-slate-400">
+                  <span class="font-medium text-slate-500">Discipline :</span>
+                  <span>${escapeHTML(item.authorProfession)}</span>
+                </div>
+              </div>
+
+              <!-- Immediate Action Buttons -->
+              <div class="flex sm:flex-col items-center sm:items-end gap-1.5 shrink-0 pt-1 sm:pt-0">
+                <button type="button" onclick="startEditTerm('${item.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-clinical-teal bg-slate-50 hover:bg-teal-50 border border-slate-200/80 hover:border-teal-200 rounded-xl transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                  <span>Modifier</span>
+                </button>
+                <button type="button" onclick="deleteTerm('${item.id}', '${item.authorId}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Supprimer ce terme">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                  <span class="sm:hidden">Supprimer</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function startEditTerm(termId) {
+      editingTermId = termId;
+      renderTermsView();
+      setTimeout(() => {
+        const input = document.getElementById(`edit-term-name-${termId}`);
+        if (input) input.focus();
+      }, 30);
+    }
+
+    function cancelEditTerm() {
+      editingTermId = null;
+      renderTermsView();
+    }
+
+    function saveEditedTerm(termId, oldAuthorId) {
+      const newName = document.getElementById(`edit-term-name-${termId}`).value.trim();
+      const newDef = document.getElementById(`edit-term-def-${termId}`).value.trim();
+      const newAuthorId = document.getElementById(`edit-term-author-${termId}`).value;
+
+      if (!newName || !newDef) {
+        showToast('Champ requis', 'Le nom du terme et sa définition ne peuvent pas être vides.', 'error');
+        return;
+      }
+
+      const oldAuthor = appData.find(a => a.id === oldAuthorId);
+      const newAuthor = appData.find(a => a.id === newAuthorId);
+      if (!oldAuthor || !newAuthor) return;
+
+      const termIndex = oldAuthor.terms.findIndex(t => t.id === termId);
+      if (termIndex === -1) return;
+
+      if (oldAuthorId === newAuthorId) {
+        oldAuthor.terms[termIndex].term = newName;
+        oldAuthor.terms[termIndex].definition = newDef;
+      } else {
+        // Reassign term to new author
+        const [movedTerm] = oldAuthor.terms.splice(termIndex, 1);
+        movedTerm.term = newName;
+        movedTerm.definition = newDef;
+        newAuthor.terms.push(movedTerm);
+      }
+
+      editingTermId = null;
+      saveData(true);
+      renderTermsView();
+    }
+
+    function deleteTerm(termId, authorId) {
+      const author = appData.find(a => a.id === authorId);
+      if (!author) return;
+      const termObj = author.terms.find(t => t.id === termId);
+      if (!termObj) return;
+
+      openConfirmModal(
+        'Supprimer ce terme ?',
+        `Voulez-vous vraiment supprimer « ${termObj.term} » (${author.name}) ?`,
+        () => {
+          author.terms = author.terms.filter(t => t.id !== termId);
+          saveData(true);
+          if (currentTab === 'terms') renderTermsView();
+          else renderAuthorsView();
+        }
+      );
+    }
+
+    // New Term Modal handlers
+    function openNewTermModal() {
+      populateAuthorDropdowns();
+      document.getElementById('new-term-title').value = '';
+      document.getElementById('new-term-def').value = '';
+      const filterAuthor = document.getElementById('terms-author-filter').value;
+      if (filterAuthor !== 'ALL') {
+        document.getElementById('new-term-author').value = filterAuthor;
+      }
+      const modal = document.getElementById('new-term-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('new-term-title').focus(), 40);
+    }
+
+    function closeNewTermModal() {
+      const modal = document.getElementById('new-term-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    document.getElementById('new-term-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const authorId = document.getElementById('new-term-author').value;
+      const term = document.getElementById('new-term-title').value.trim();
+      const definition = document.getElementById('new-term-def').value.trim();
+
+      const author = appData.find(a => a.id === authorId);
+      if (!author || !term || !definition) return;
+
+      author.terms.push({
+        id: uid('t'),
+        term,
+        definition
+      });
+
+      closeNewTermModal();
+      saveData(true);
+      renderTermsView();
+    });
+
+    // =========================================================================
+    // 6. TAB 2: AUTEURS — FULL CRUD ON AUTHORS, TERMS & REFERENCES
+    // =========================================================================
+    function clearAuthorsSearch() {
+      document.getElementById('authors-search-input').value = '';
+      document.getElementById('authors-search-clear').classList.add('hidden');
+      renderAuthorsView();
+    }
+
+    function toggleAuthorAccordion(authorId) {
+      if (expandedAuthors.has(authorId)) {
+        expandedAuthors.delete(authorId);
+      } else {
+        expandedAuthors.add(authorId);
+      }
+      renderAuthorsView();
+    }
+
+    function toggleAllAuthorsAccordion(expand) {
+      if (expand) {
+        appData.forEach(a => expandedAuthors.add(a.id));
+      } else {
+        expandedAuthors.clear();
+      }
+      renderAuthorsView();
+    }
+
+    function renderAuthorsView() {
+      const searchInput = document.getElementById('authors-search-input');
+      const rawQuery = searchInput.value;
+      const clearBtn = document.getElementById('authors-search-clear');
+      if (rawQuery.trim().length > 0) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+
+      const query = normalizeText(rawQuery.trim());
+
+      const sortedAuthors = [...appData].sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+      const filtered = sortedAuthors.filter(author => {
+        if (!query) return true;
+        const termsBlob = author.terms.map(t => `${t.term} ${t.definition}`).join(' ');
+        const refsBlob = author.references.join(' ');
+        const hay = normalizeText(`${author.name} ${author.profession} ${termsBlob} ${refsBlob}`);
+        return hay.includes(query);
+      });
+
+      document.getElementById('authors-results-summary').innerHTML =
+        `Affichage de <strong class="text-slate-800">${filtered.length}</strong> auteur${filtered.length > 1 ? 's' : ''} sur ${appData.length}`;
+
+      const container = document.getElementById('authors-list-container');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+            <h3 class="text-sm font-semibold text-slate-800">Aucun auteur trouvé</h3>
+            <p class="text-xs text-slate-500 mt-1">Aucun auteur, terme ou référence ne correspond à « ${escapeHTML(rawQuery)} ».</p>
+            <button type="button" onclick="clearAuthorsSearch()" class="mt-4 px-4 py-2 text-xs font-medium text-clinical-teal bg-teal-50 hover:bg-teal-100 rounded-xl transition-colors">
+              Afficher tous les auteurs
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(author => {
+        // Automatically expand if searching or explicitly opened
+        const isExpanded = query.length > 0 || expandedAuthors.has(author.id);
+        const isEditingAuthor = editingAuthorInfoId === author.id;
+
+        const initials = author.name
+          .split(/[\s-]+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(w => w[0].toUpperCase())
+          .join('');
+
+        return `
+          <article id="author-card-${author.id}" class="bg-white rounded-2xl border ${isExpanded ? 'border-teal-300/80 shadow-sm' : 'border-slate-200 shadow-2xs'} overflow-hidden transition-all">
+            <!-- Author Header Row -->
+            <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isExpanded ? 'bg-slate-50/60 border-b border-slate-200/80' : 'hover:bg-slate-50/40'} transition-colors">
+              ${isEditingAuthor ? `
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                  <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Nom de l'auteur</label>
+                    <input id="edit-author-name-${author.id}" type="text" value="${escapeHTML(author.name)}" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-clinical-teal focus:outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Profession / Titre</label>
+                    <input id="edit-author-prof-${author.id}" type="text" value="${escapeHTML(author.profession)}" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-clinical-teal focus:outline-none">
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button type="button" onclick="cancelEditAuthorInfo()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-200/70 hover:bg-slate-200 rounded-xl">Annuler</button>
+                  <button type="button" onclick="saveAuthorInfo('${author.id}')" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-xl">Enregistrer</button>
+                </div>
+              ` : `
+                <div class="flex items-start sm:items-center gap-3.5 flex-1 cursor-pointer select-none" onclick="toggleAuthorAccordion('${author.id}')">
+                  <div class="w-11 h-11 rounded-xl bg-teal-50 border border-teal-200/70 text-clinical-tealDark font-bold text-sm flex items-center justify-center shrink-0">
+                    ${escapeHTML(initials)}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h2 class="text-base font-bold text-slate-900">${escapeHTML(author.name)}</h2>
+                      <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-teal-50 text-clinical-teal border border-teal-200/60">
+                        ${author.terms.length} terme${author.terms.length > 1 ? 's' : ''}
+                      </span>
+                      <span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-100 text-slate-600">
+                        ${author.references.length} réf.
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">${escapeHTML(author.profession)}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                  <button type="button" onclick="startEditAuthorInfo('${author.id}')" title="Modifier le nom ou la profession de l'auteur" class="p-2 text-slate-400 hover:text-clinical-teal hover:bg-teal-50 rounded-xl transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                  </button>
+                  <button type="button" onclick="deleteAuthor('${author.id}')" title="Supprimer cet auteur" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                  </button>
+                  <button type="button" onclick="toggleAuthorAccordion('${author.id}')" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-xl transition-colors">
+                    <span>${isExpanded ? 'Réduire' : 'Détails'}</span>
+                    <svg class="w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                  </button>
+                </div>
+              `}
+            </div>
+
+            <!-- Author Expanded Body: Associated Terms + Bibliographic References -->
+            ${isExpanded ? `
+              <div class="p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white">
+                
+                <!-- LEFT COLUMN (7 cols): TERMES ASSOCIÉS -->
+                <div class="lg:col-span-7 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-clinical-tealDark flex items-center gap-2">
+                      <span class="w-1.5 h-4 rounded-full bg-clinical-teal"></span>
+                      Termes & concepts associés (${author.terms.length})
+                    </h3>
+                    <button type="button" onclick="toggleAddAuthorTermForm('${author.id}')" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-clinical-teal bg-teal-50 hover:bg-teal-100 border border-teal-200/70 rounded-lg transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                      Ajouter un terme
+                    </button>
+                  </div>
+
+                  <!-- Inline Add Term Form for this Author -->
+                  <div id="add-term-box-${author.id}" class="hidden bg-teal-50/50 border border-teal-200 rounded-xl p-3.5 space-y-2.5">
+                    <div class="text-xs font-semibold text-clinical-tealDark">Nouveau terme pour ${escapeHTML(author.name)}</div>
+                    <input id="new-author-term-name-${author.id}" type="text" placeholder="Intitulé du terme..." class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-clinical-teal focus:outline-none">
+                    <textarea id="new-author-term-def-${author.id}" rows="2" placeholder="Définition clinique..." class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-clinical-teal focus:outline-none"></textarea>
+                    <div class="flex justify-end gap-2">
+                      <button type="button" onclick="toggleAddAuthorTermForm('${author.id}', false)" class="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200/70 rounded-lg">Annuler</button>
+                      <button type="button" onclick="addTermToAuthor('${author.id}')" class="px-3 py-1 text-xs font-semibold text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-lg">Enregistrer le terme</button>
+                    </div>
+                  </div>
+
+                  <!-- Terms List -->
+                  ${author.terms.length === 0 ? `
+                    <p class="text-xs text-slate-400 italic py-3 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      Aucun terme enregistré pour cet auteur. Cliquez sur « Ajouter un terme » pour en créer un.
+                    </p>
+                  ` : `
+                    <div class="space-y-2.5">
+                      ${author.terms.map(t => {
+                        const isEditingThisTerm = editingAuthorTermId === t.id;
+                        if (isEditingThisTerm) {
+                          return `
+                            <div class="p-3.5 rounded-xl border-2 border-clinical-teal bg-teal-50/20 space-y-2.5">
+                              <input id="author-edit-term-name-${t.id}" type="text" value="${escapeHTML(t.term)}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 focus:border-clinical-teal focus:outline-none">
+                              <textarea id="author-edit-term-def-${t.id}" rows="3" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-clinical-teal focus:outline-none">${escapeHTML(t.definition)}</textarea>
+                              <div class="flex justify-end gap-2">
+                                <button type="button" onclick="cancelEditAuthorTerm()" class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Annuler</button>
+                                <button type="button" onclick="saveAuthorTerm('${author.id}', '${t.id}')" class="px-3 py-1 text-xs font-semibold text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-lg">Sauvegarder</button>
+                              </div>
+                            </div>
+                          `;
+                        }
+                        return `
+                          <div class="group/term p-3.5 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 transition-colors">
+                            <div class="flex items-start justify-between gap-2">
+                              <div class="font-semibold text-sm text-slate-900">${escapeHTML(t.term)}</div>
+                              <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="startEditAuthorTerm('${t.id}')" title="Modifier ce terme" class="p-1 text-slate-400 hover:text-clinical-teal hover:bg-teal-50 rounded-lg transition-colors">
+                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                                </button>
+                                <button type="button" onclick="deleteTerm('${t.id}', '${author.id}')" title="Supprimer ce terme" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                            <p class="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">${escapeHTML(t.definition)}</p>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  `}
+                </div>
+
+                <!-- RIGHT COLUMN (5 cols): RÉFÉRENCES BIBLIOGRAPHIQUES -->
+                <div class="lg:col-span-5 space-y-3 lg:border-l lg:border-slate-100 lg:pl-6">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                      <svg class="w-4 h-4 text-clinical-teal" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                      Références théoriques (${author.references.length})
+                    </h3>
+                    <button type="button" onclick="toggleAddAuthorRefForm('${author.id}')" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                      Ajouter une réf.
+                    </button>
+                  </div>
+
+                  <!-- Inline Add Reference Form -->
+                  <div id="add-ref-box-${author.id}" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <div class="text-xs font-semibold text-slate-700">Nouvelle référence bibliographique</div>
+                    <textarea id="new-author-ref-text-${author.id}" rows="2" placeholder="Nom, P. (Année). Titre de l'ouvrage. Éditeur." class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:border-clinical-teal focus:outline-none"></textarea>
+                    <div class="flex justify-end gap-2">
+                      <button type="button" onclick="toggleAddAuthorRefForm('${author.id}', false)" class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200/70 rounded-lg">Annuler</button>
+                      <button type="button" onclick="addReferenceToAuthor('${author.id}')" class="px-3 py-1 text-xs font-semibold text-white bg-clinical-teal hover:bg-clinical-tealDark rounded-lg">Ajouter</button>
+                    </div>
+                  </div>
+
+                  <!-- References List -->
+                  ${author.references.length === 0 ? `
+                    <p class="text-xs text-slate-400 italic py-3 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      Aucune référence renseignée.
+                    </p>
+                  ` : `
+                    <ul class="space-y-2">
+                      ${author.references.map((ref, rIdx) => {
+                        const refKey = `${author.id}::${rIdx}`;
+                        const isEditingRef = editingAuthorRefKey === refKey;
+                        if (isEditingRef) {
+                          return `
+                            <li class="p-2.5 rounded-xl border-2 border-clinical-teal bg-teal-50/20 space-y-2">
+                              <textarea id="edit-ref-input-${author.id}-${rIdx}" rows="3" class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-clinical-teal focus:outline-none">${escapeHTML(ref)}</textarea>
+                              <div class="flex justify-end gap-1.5">
+                                <button type="button" onclick="cancelEditReference()" class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg">Annuler</button>
+                                <button type="button" onclick="saveAuthorReference('${author.id}', ${rIdx})" class="px-2.5 py-1 text-xs font-semibold text-white bg-clinical-teal rounded-lg">Enregistrer</button>
+                              </div>
+                            </li>
+                          `;
+                        }
+                        return `
+                          <li class="p-3 rounded-xl bg-amber-50/40 border border-amber-200/50 text-xs text-slate-700 leading-relaxed flex items-start justify-between gap-2">
+                            <span class="flex-1">${escapeHTML(ref)}</span>
+                            <div class="flex items-center gap-0.5 shrink-0">
+                              <button type="button" onclick="startEditReference('${author.id}', ${rIdx})" title="Modifier cette référence" class="p-1 text-slate-400 hover:text-clinical-teal hover:bg-white rounded-lg transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                              </button>
+                              <button type="button" onclick="deleteAuthorReference('${author.id}', ${rIdx})" title="Supprimer cette référence" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                              </button>
+                            </div>
+                          </li>
+                        `;
+                      }).join('')}
+                    </ul>
+                  `}
+                </div>
+
+              </div>
+            ` : ''}
+          </article>
+        `;
+      }).join('');
+    }
+
+    // --- Author Info Editing & Creation ---
+    function startEditAuthorInfo(authorId) {
+      editingAuthorInfoId = authorId;
+      renderAuthorsView();
+    }
+
+    function cancelEditAuthorInfo() {
+      editingAuthorInfoId = null;
+      renderAuthorsView();
+    }
+
+    function saveAuthorInfo(authorId) {
+      const name = document.getElementById(`edit-author-name-${authorId}`).value.trim();
+      const profession = document.getElementById(`edit-author-prof-${authorId}`).value.trim();
+      if (!name || !profession) {
+        showToast('Champ requis', 'Le nom et la profession sont obligatoires.', 'error');
+        return;
+      }
+      const author = appData.find(a => a.id === authorId);
+      if (author) {
+        author.name = name;
+        author.profession = profession;
+        editingAuthorInfoId = null;
+        saveData(true);
+        renderAuthorsView();
+      }
+    }
+
+    function deleteAuthor(authorId) {
+      const author = appData.find(a => a.id === authorId);
+      if (!author) return;
+      openConfirmModal(
+        'Supprimer cet auteur ?',
+        `Voulez-vous supprimer « ${author.name} » ainsi que ses ${author.terms.length} terme(s) associé(s) ?`,
+        () => {
+          appData = appData.filter(a => a.id !== authorId);
+          expandedAuthors.delete(authorId);
+          saveData(true);
+          renderAuthorsView();
+        }
+      );
+    }
+
+    function openNewAuthorModal() {
+      document.getElementById('new-author-name').value = '';
+      document.getElementById('new-author-prof').value = '';
+      document.getElementById('new-author-ref').value = '';
+      const modal = document.getElementById('new-author-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('new-author-name').focus(), 40);
+    }
+
+    function closeNewAuthorModal() {
+      const modal = document.getElementById('new-author-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    document.getElementById('new-author-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-author-name').value.trim();
+      const profession = document.getElementById('new-author-prof').value.trim();
+      const ref = document.getElementById('new-author-ref').value.trim();
+      if (!name || !profession) return;
+
+      const newId = uid('a');
+      appData.push({
+        id: newId,
+        name,
+        profession,
+        terms: [],
+        references: ref ? [ref] : []
+      });
+
+      expandedAuthors.add(newId);
+      closeNewAuthorModal();
+      saveData(true);
+      renderAuthorsView();
+      setTimeout(() => {
+        const el = document.getElementById(`author-card-${newId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 60);
+    });
+
+    // --- Author Card: Add / Edit Term ---
+    function toggleAddAuthorTermForm(authorId, forceState) {
+      const box = document.getElementById(`add-term-box-${authorId}`);
+      if (!box) return;
+      const shouldShow = typeof forceState === 'boolean' ? forceState : box.classList.contains('hidden');
+      if (shouldShow) {
+        box.classList.remove('hidden');
+        document.getElementById(`new-author-term-name-${authorId}`).focus();
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function addTermToAuthor(authorId) {
+      const nameInput = document.getElementById(`new-author-term-name-${authorId}`);
+      const defInput = document.getElementById(`new-author-term-def-${authorId}`);
+      const term = nameInput.value.trim();
+      const definition = defInput.value.trim();
+
+      if (!term || !definition) {
+        showToast('Champ requis', 'Veuillez renseigner le nom du terme et sa définition.', 'error');
+        return;
+      }
+
+      const author = appData.find(a => a.id === authorId);
+      if (!author) return;
+
+      author.terms.push({
+        id: uid('t'),
+        term,
+        definition
+      });
+
+      expandedAuthors.add(authorId);
+      saveData(true);
+      renderAuthorsView();
+    }
+
+    function startEditAuthorTerm(termId) {
+      editingAuthorTermId = termId;
+      renderAuthorsView();
+    }
+
+    function cancelEditAuthorTerm() {
+      editingAuthorTermId = null;
+      renderAuthorsView();
+    }
+
+    function saveAuthorTerm(authorId, termId) {
+      const name = document.getElementById(`author-edit-term-name-${termId}`).value.trim();
+      const def = document.getElementById(`author-edit-term-def-${termId}`).value.trim();
+      if (!name || !def) {
+        showToast('Champ requis', 'Le terme et la définition sont requis.', 'error');
+        return;
+      }
+      const author = appData.find(a => a.id === authorId);
+      if (!author) return;
+      const termObj = author.terms.find(t => t.id === termId);
+      if (termObj) {
+        termObj.term = name;
+        termObj.definition = def;
+        editingAuthorTermId = null;
+        saveData(true);
+        renderAuthorsView();
+      }
+    }
+
+    // --- Author Card: Add / Edit / Delete Reference ---
+    function toggleAddAuthorRefForm(authorId, forceState) {
+      const box = document.getElementById(`add-ref-box-${authorId}`);
+      if (!box) return;
+      const shouldShow = typeof forceState === 'boolean' ? forceState : box.classList.contains('hidden');
+      if (shouldShow) {
+        box.classList.remove('hidden');
+        document.getElementById(`new-author-ref-text-${authorId}`).focus();
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function addReferenceToAuthor(authorId) {
+      const input = document.getElementById(`new-author-ref-text-${authorId}`);
+      const refText = input.value.trim();
+      if (!refText) {
+        showToast('Champ requis', 'Veuillez saisir la référence bibliographique.', 'error');
+        return;
+      }
+      const author = appData.find(a => a.id === authorId);
+      if (!author) return;
+
+      author.references.push(refText);
+      expandedAuthors.add(authorId);
+      saveData(true);
+      renderAuthorsView();
+    }
+
+    function startEditReference(authorId, rIdx) {
+      editingAuthorRefKey = `${authorId}::${rIdx}`;
+      renderAuthorsView();
+    }
+
+    function cancelEditReference() {
+      editingAuthorRefKey = null;
+      renderAuthorsView();
+    }
+
+    function saveAuthorReference(authorId, rIdx) {
+      const input = document.getElementById(`edit-ref-input-${authorId}-${rIdx}`);
+      const val = input.value.trim();
+      if (!val) {
+        showToast('Champ requis', 'La référence ne peut pas être vide.', 'error');
+        return;
+      }
+      const author = appData.find(a => a.id === authorId);
+      if (author && author.references[rIdx] !== undefined) {
+        author.references[rIdx] = val;
+        editingAuthorRefKey = null;
+        saveData(true);
+        renderAuthorsView();
+      }
+    }
+
+    function deleteAuthorReference(authorId, rIdx) {
+      const author = appData.find(a => a.id === authorId);
+      if (!author || author.references[rIdx] === undefined) return;
+      openConfirmModal(
+        'Supprimer cette référence ?',
+        'Voulez-vous supprimer cette référence bibliographique de la fiche de l’auteur ?',
+        () => {
+          author.references.splice(rIdx, 1);
+          saveData(true);
+          renderAuthorsView();
+        }
+      );
+    }
+
+    // =========================================================================
+    // 7. EXPORT, IMPORT & RESET DATA
+    // =========================================================================
+    function exportJSON() {
+      // Export clean structure without transient UI IDs or keeping clean schema
+      const cleanExport = appData.map(a => ({
+        name: a.name,
+        profession: a.profession,
+        terms: a.terms.map(t => ({ term: t.term, definition: t.definition })),
+        references: [...a.references]
+      }));
+
+      const blob = new Blob([JSON.stringify(cleanExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `referentiel-psychomoteur-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Export réussi', 'Fichier JSON téléchargé.');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Le fichier JSON doit contenir un tableau d’auteurs.');
+          }
+          appData = hydrateData(parsed);
+          editingTermId = null;
+          editingAuthorInfoId = null;
+          editingAuthorTermId = null;
+          editingAuthorRefKey = null;
+          saveData(true);
+          if (currentTab === 'terms') renderTermsView();
+          else renderAuthorsView();
+          showToast('Import réussi', `${appData.length} auteurs chargés.`);
+        } catch (err) {
+          showToast('Erreur d’importation', 'Format de fichier JSON invalide.', 'error');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function confirmResetData() {
+      openConfirmModal(
+        'Réinitialiser le référentiel ?',
+        'Toutes vos modifications locales seront remplacées par les 55 auteurs et 230 termes d’origine issus du tableau Excel.',
+        () => {
+          appData = hydrateData(INITIAL_DATA);
+          editingTermId = null;
+          editingAuthorInfoId = null;
+          editingAuthorTermId = null;
+          editingAuthorRefKey = null;
+          expandedAuthors.clear();
+          saveData(true);
+          if (currentTab === 'terms') renderTermsView();
+          else renderAuthorsView();
+          showToast('Données réinitialisées', 'Base restaurée à partir du tableau Excel.');
+        }
+      );
+    }
+
+    // Keyboard shortcut: Escape closes open modals or inline edits
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeNewTermModal();
+        closeNewAuthorModal();
+        closeConfirmModal();
+        if (editingTermId) cancelEditTerm();
+        if (editingAuthorInfoId) cancelEditAuthorInfo();
+        if (editingAuthorTermId) cancelEditAuthorTerm();
+        if (editingAuthorRefKey) cancelEditReference();
+      }
+    });
+
+    // =========================================================================
+    // 8. INITIALIZATION
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      updateGlobalCounters();
+      renderTermsView();
+    });
+  </script>
+</body>
+</html>
